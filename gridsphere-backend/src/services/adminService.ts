@@ -231,45 +231,54 @@ export class AdminService {
     return withEffectiveStatus(updated);
   }
 
- async deleteDevice(deviceId: number) {
-  const device = await prisma.device.findUnique({ where: { id: deviceId } });
-  if (!device) throw new ApiError(404, "Device not found");
+  async deleteDevice(deviceId: number) {
+    const device = await prisma.device.findUnique({ where: { id: deviceId } });
+    if (!device) throw new ApiError(404, "Device not found");
 
-  await prisma.$transaction(async (tx) => {
-    // 1. Delete chat messages
-    await tx.deviceChatMessage.deleteMany({ where: { deviceId } });
-
-    // 2. Delete sensor history (through device_sensors – we need to delete sensor readings first)
-    // Get all sensor IDs for this device
-    const sensors = await tx.deviceSensor.findMany({
-      where: { deviceId },
-      select: { id: true },
-    });
-    const sensorIds = sensors.map(s => s.id);
-    if (sensorIds.length > 0) {
-      await tx.sensorReading.deleteMany({
-        where: { deviceSensorId: { in: sensorIds } },
+    await prisma.$transaction(async (tx) => {
+      // 1. Get all sensor IDs for this device
+      const sensors = await tx.deviceSensor.findMany({
+        where: { deviceId },
+        select: { id: true },
       });
-    }
+      const sensorIds = sensors.map((s) => s.id);
 
-    // 3. Delete device sensors
-    await tx.deviceSensor.deleteMany({ where: { deviceId } });
+      // 2. Delete sensor readings (they reference device_sensors)
+      if (sensorIds.length > 0) {
+        await tx.sensorReading.deleteMany({
+          where: { deviceSensorId: { in: sensorIds } },
+        });
 
-    // 4. Delete advisories
-    await tx.deviceAdvisory.deleteMany({ where: { deviceId } });
+        // 3. Delete device sensor history (references device_sensors, but ON DELETE SET NULL – we delete anyway)
+        await tx.deviceSensorHistory.deleteMany({
+          where: { deviceSensorId: { in: sensorIds } },
+        });
+      }
 
-    // 5. Delete subscriptions
-    await tx.deviceSubscription.deleteMany({ where: { deviceId } });
+      // 4. Delete device sensors
+      await tx.deviceSensor.deleteMany({ where: { deviceId } });
 
-    // 6. Delete user associations (you already had this)
-    await tx.deviceUser.deleteMany({ where: { deviceId } });
+      // 5. Delete raw payloads (references devices – ON DELETE SET NULL, but we can delete them)
+      await tx.rawPayload.deleteMany({ where: { deviceId } });
 
-    // 7. Finally, delete the device itself
-    await tx.device.delete({ where: { id: deviceId } });
-  });
+      // 6. Delete chat messages
+      await tx.deviceChatMessage.deleteMany({ where: { deviceId } });
 
-  return { message: "Device deleted successfully" };
-}
+      // 7. Delete advisories
+      await tx.deviceAdvisory.deleteMany({ where: { deviceId } });
+
+      // 8. Delete subscriptions
+      await tx.deviceSubscription.deleteMany({ where: { deviceId } });
+
+      // 9. Delete user associations
+      await tx.deviceUser.deleteMany({ where: { deviceId } });
+
+      // 10. Finally, delete the device itself
+      await tx.device.delete({ where: { id: deviceId } });
+    });
+
+    return { message: "Device deleted successfully" };
+  }
 
   // ===== USER MANAGEMENT =====
 

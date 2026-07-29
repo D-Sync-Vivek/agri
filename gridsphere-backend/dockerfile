@@ -1,0 +1,35 @@
+# Use official Node.js 20 LTS image
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy the rest of the source code
+COPY . .
+
+# Generate Prisma client and build the TypeScript code
+RUN npx prisma generate
+RUN npm run build
+
+# ---- Production stage ----
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy only necessary files from builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package*.json ./
+
+# Install only production dependencies (Prisma needs to be present)
+RUN npm ci --only=production
+
+# Expose the API port (default 8000)
+EXPOSE 8000
+
+# Start the server
+CMD ["node", "dist/server.js"]

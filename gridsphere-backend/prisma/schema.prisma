@@ -1,0 +1,311 @@
+// GridSphere Weather Station API - Prisma schema
+// Configured for PostgreSQL (Neon serverless Postgres).
+// Mirrors the original SQLAlchemy models 1:1 (table names, column names,
+// types, defaults, foreign keys).
+//
+// Neon setup:
+//   1. Create a project at https://console.neon.tech
+//   2. Copy the "Connection string" (pooled, for the app) into DATABASE_URL
+//   3. Copy the "Direct connection" string into DIRECT_URL (used by Prisma
+//      Migrate, which needs a non-pooled connection)
+//   4. npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  provider  = "postgresql"
+}
+
+// ============================================================
+// USERS
+// ============================================================
+model User {
+  id            Int      @id @default(autoincrement())
+  name          String?
+  email         String   @unique
+  passwordHash  String?  @map("password_hash")
+  phone         String?
+  companyName   String?  @map("company_name")
+  role          String   @default("user")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  deviceAssociations   DeviceUser[]
+  sensorHistoryActions DeviceSensorHistory[]
+  chatMessages         DeviceChatMessage[]
+
+  @@map("users")
+}
+
+// ============================================================
+// DEVICES
+// ============================================================
+model Device {
+  id                Int       @id @default(autoincrement())
+  deviceUid         String    @unique @map("device_uid")
+  deviceName        String?   @map("device_name")
+  description       String?
+  frequency         Int       @default(60)
+  locationName      String?   @map("location_name")
+  latitude          Float?
+  longitude         Float?
+  installationDate  DateTime? @map("installation_date")
+  status            String    @default("inactive")
+  lastSeenAt        DateTime? @map("last_seen_at")
+  // Device-health telemetry (populated only if the hardware reports it via
+  // /readings/add - see readingController.addReading). All nullable so
+  // devices that don't report these simply omit them, no fake defaults.
+  batteryLevel      Float?    @map("battery_level")        // percent, 0-100
+  batteryVoltage    Float?   @map("battery_voltage")
+  isSolarCharging   Boolean?  @map("is_solar_charging")
+  signalStrengthDbm Int?      @map("signal_strength_dbm")
+  firmwareVersion   String?   @map("firmware_version")
+  // The crop currently planted at this device's location, if the user has
+  // set one (see POST /devices/:id/crop). Drives crop-specific dashboard
+  // data and AI advisories. Nullable - a device with no crop set just
+  // gets generic weather data, no crop-specific features.
+  cropId            Int?      @map("crop_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  userAssociations DeviceUser[]
+  sensors          DeviceSensor[]
+  rawPayloads      RawPayload[]
+  subscriptions    DeviceSubscription[]
+  crop             Crop?      @relation(fields: [cropId], references: [id])
+  advisories       DeviceAdvisory[]
+  chatMessages     DeviceChatMessage[]
+
+  @@map("devices")
+}
+
+// ============================================================
+// AI CHAT ASSISTANT
+// ============================================================
+
+model DeviceChatMessage {
+  id        Int      @id @default(autoincrement())
+  deviceId  Int      @map("device_id")
+  userId    Int      @map("user_id")
+  role      String   // "user" | "assistant"
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  device Device @relation(fields: [deviceId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([deviceId, userId, createdAt])
+  @@map("device_chat_messages")
+}
+
+// ============================================================
+// CROPS
+// ============================================================
+// Reference data. Seeded with "mango" and "apple" for now (see
+// prisma/seed.ts) - POST /crops (admin-style seed route, not exposed to
+// regular users) can add more later. Users pick from whatever exists here
+// via POST /devices/:id/crop; they don't type free text.
+model Crop {
+  id        Int      @id @default(autoincrement())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  devices    Device[]
+  advisories DeviceAdvisory[]
+
+  @@map("crops")
+}
+
+// ============================================================
+// DEVICE_ADVISORIES
+// ============================================================
+// Cached AI-generated advisories (see services/deepseekService.ts +
+// controllers/advisoryController.ts). Generating one calls the DeepSeek
+// API, which costs money and takes a couple seconds, so results are
+// cached here and only regenerated on request (?refresh=true) or once
+// stale (see ADVISORY_STALE_MINUTES in advisoryController.ts). Also
+// doubles as a history of past advisories for a device.
+model DeviceAdvisory {
+  id          Int      @id @default(autoincrement())
+  deviceId    Int      @map("device_id")
+  cropId      Int?     @map("crop_id")
+  summary     String
+  precautions Json     // string[]
+  risks       Json     // { name: string; level: "low"|"medium"|"high"; reason: string }[]
+  modelName   String   @map("model_name")
+  generatedAt DateTime @default(now()) @map("generated_at")
+
+  device Device @relation(fields: [deviceId], references: [id])
+  crop   Crop?  @relation(fields: [cropId], references: [id])
+
+  @@index([deviceId])
+  @@map("device_advisories")
+}
+
+// ============================================================
+// DEVICE_USERS (pivot table: many-to-many Users <-> Devices)
+// ============================================================
+model DeviceUser {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  deviceId    Int      @map("device_id")
+  role        String?
+  permissions Json?
+  isOwner     Boolean  @default(false) @map("is_owner")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@map("device_users")
+}
+
+// ============================================================
+// SENSOR_TYPES (reference data)
+// ============================================================
+model SensorType {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  code      String?  @unique
+  unit      String?
+  dataType  String?  @map("data_type")
+  category  String?
+  minValue  Float?   @map("min_value")
+  maxValue  Float?   @map("max_value")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  deviceSensors DeviceSensor[]
+
+  @@map("sensor_types")
+}
+
+// ============================================================
+// DEVICE_SENSORS (installed sensors on a device)
+// ============================================================
+model DeviceSensor {
+  id                 Int       @id @default(autoincrement())
+  deviceId           Int       @map("device_id")
+  sensorTypeId       Int       @map("sensor_type_id")
+  sensorLabel        String?   @map("sensor_label")
+  hardwarePort       String?   @map("hardware_port")
+  calibrationOffset  Float     @default(0.0) @map("calibration_offset")
+  calibrationScale   Float     @default(1.0) @map("calibration_scale")
+  isActive           Boolean   @default(true) @map("is_active")
+  installedAt        DateTime? @map("installed_at")
+  removedAt          DateTime? @map("removed_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  device     Device     @relation(fields: [deviceId], references: [id])
+  sensorType SensorType @relation(fields: [sensorTypeId], references: [id])
+  readings   SensorReading[]
+  history    DeviceSensorHistory[]
+
+  @@index([deviceId])
+  @@index([sensorTypeId])
+  @@map("device_sensors")
+}
+
+// ============================================================
+// SENSOR_READINGS
+// ============================================================
+model SensorReading {
+  id              Int       @id @default(autoincrement())
+  deviceSensorId  Int       @map("device_sensor_id")
+  value           Float?
+  qualityFlag     String?   @map("quality_flag")
+  recordedAt      DateTime? @map("recorded_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  deviceSensor DeviceSensor @relation(fields: [deviceSensorId], references: [id])
+
+  @@index([deviceSensorId])
+  @@index([recordedAt])
+  @@map("sensor_readings")
+}
+
+// ============================================================
+// RAW_PAYLOADS
+// ============================================================
+model RawPayload {
+  id          Int      @id @default(autoincrement())
+  deviceId    Int?     @map("device_id")
+  payloadJson Json?    @map("payload_json")
+  receivedAt  DateTime @default(now()) @map("received_at")
+
+  device Device? @relation(fields: [deviceId], references: [id])
+
+  @@index([deviceId])
+  @@index([receivedAt])
+  @@map("raw_payloads")
+}
+
+// ============================================================
+// DEVICE_SENSOR_HISTORY (audit trail)
+// ============================================================
+model DeviceSensorHistory {
+  id             Int      @id @default(autoincrement())
+  deviceSensorId Int?     @map("device_sensor_id")
+  action         String?
+  oldValue       String?  @map("old_value")
+  newValue       String?  @map("new_value")
+  performedBy    Int?     @map("performed_by")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  deviceSensor DeviceSensor? @relation(fields: [deviceSensorId], references: [id])
+  user         User?         @relation(fields: [performedBy], references: [id])
+
+  @@index([deviceSensorId])
+  @@map("device_sensor_history")
+}
+
+// ============================================================
+// SUBSCRIPTION_PLANS
+// ============================================================
+model SubscriptionPlan {
+  id                    Int      @id @default(autoincrement())
+  planName              String?  @map("plan_name")
+  planCode              String?  @unique @map("plan_code")
+  priceMonthly          Decimal? @map("price_monthly") @db.Decimal(10, 2)
+  priceYearly           Decimal? @map("price_yearly") @db.Decimal(10, 2)
+  maxDevices            Int?     @map("max_devices")
+  maxSensorsPerDevice   Int?     @map("max_sensors_per_device")
+  dataRetentionDays     Int?     @map("data_retention_days")
+  featuresJson          Json?    @map("features_json")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  deviceSubscriptions DeviceSubscription[]
+
+  @@map("subscription_plans")
+}
+
+// ============================================================
+// DEVICE_SUBSCRIPTIONS
+// ============================================================
+model DeviceSubscription {
+  id            Int       @id @default(autoincrement())
+  deviceId      Int?      @map("device_id")
+  planId        Int?      @map("plan_id")
+  startDate     DateTime? @map("start_date")
+  endDate       DateTime? @map("end_date")
+  billingCycle  String?   @map("billing_cycle")
+  pricePaid     Decimal?  @map("price_paid") @db.Decimal(10, 2)
+  status        String?
+  autoRenew     Boolean   @default(true) @map("auto_renew")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  device Device?           @relation(fields: [deviceId], references: [id])
+  plan   SubscriptionPlan? @relation(fields: [planId], references: [id])
+
+  @@index([deviceId])
+  @@index([planId])
+  @@map("device_subscriptions")
+}

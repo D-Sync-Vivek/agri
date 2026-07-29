@@ -1,0 +1,978 @@
+openapi: 3.0.3
+info:
+  title: GridSphere Weather Station API
+  description: >
+    Enterprise IoT backend migrated from FastAPI to Node.js/Express/TypeScript/Prisma.
+    All routes, request/response shapes, and status codes match the original API exactly.
+  version: "2.0.0"
+servers:
+  - url: /
+    description: Current server
+
+tags:
+  - name: Health
+  - name: Authentication
+  - name: Devices
+  - name: Users
+  - name: Readings
+  - name: Sensors
+  - name: Subscriptions
+  - name: Crops
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Paste the `access_token` returned by POST /login. Click "Authorize"
+        above and enter just the token (Swagger UI adds the "Bearer " prefix).
+
+  schemas:
+    UserCreate:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string, example: "Jane Doe" }
+        email: { type: string, format: email, example: "jane@example.com" }
+        password: { type: string, format: password, example: "secret123" }
+        phone: { type: string, nullable: true, example: "+1234567890" }
+        role: { type: string, default: "user", example: "user" }
+
+    UserResponse:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: "Jane Doe" }
+        email: { type: string, example: "jane@example.com" }
+        role: { type: string, example: "user" }
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, example: "bearer" }
+        user:
+          type: object
+          properties:
+            id: { type: integer }
+            name: { type: string }
+            email: { type: string }
+            role: { type: string }
+
+    DeviceCreate:
+      type: object
+      required: [device_uid]
+      properties:
+        device_uid: { type: string, example: "esp32-001" }
+        device_name: { type: string, nullable: true, example: "Hub 1" }
+        description: { type: string, nullable: true }
+        frequency: { type: integer, default: 5, example: 5 }
+        location_name: { type: string, nullable: true, example: "North Field" }
+        latitude: { type: number, nullable: true, example: 28.6139 }
+        longitude: { type: number, nullable: true, example: 77.2090 }
+
+    DeviceResponse:
+      allOf:
+        - $ref: '#/components/schemas/DeviceCreate'
+        - type: object
+          properties:
+            id: { type: integer, example: 1 }
+            status: { type: string, example: "inactive" }
+            lastSeenAt: { type: string, format: date-time, nullable: true }
+            batteryLevel: { type: number, nullable: true, example: 87.5, description: "Percent, 0-100" }
+            isSolarCharging: { type: boolean, nullable: true }
+            signalStrengthDbm: { type: integer, nullable: true, example: -62 }
+            firmwareVersion: { type: string, nullable: true, example: "1.4.2" }
+            created_at: { type: string, format: date-time }
+
+    SensorTypeCreate:
+      type: object
+      required: [name, code]
+      properties:
+        name: { type: string, example: "Temperature" }
+        code: { type: string, example: "TEMP_C" }
+        unit: { type: string, nullable: true, example: "°C" }
+        data_type: { type: string, default: "float", example: "float" }
+        category: { type: string, nullable: true, example: "environmental" }
+        min_value: { type: number, nullable: true }
+        max_value: { type: number, nullable: true }
+
+    DeviceSensorCreate:
+      type: object
+      required: [device_id, sensor_type_id, sensor_label]
+      properties:
+        device_id: { type: integer, example: 1 }
+        sensor_type_id: { type: integer, example: 1 }
+        sensor_label: { type: string, example: "temp" }
+        hardware_port: { type: string, nullable: true, example: "A0" }
+        calibration_offset: { type: number, default: 0.0 }
+        calibration_scale: { type: number, default: 1.0 }
+
+    DeviceSensorUpdate:
+      type: object
+      properties:
+        sensor_label: { type: string }
+        hardware_port: { type: string }
+        calibration_offset: { type: number }
+        calibration_scale: { type: number }
+        is_active: { type: boolean }
+
+    ApiError:
+      type: object
+      properties:
+        detail: { type: string, example: "Could not validate credentials" }
+
+paths:
+  /:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+                  message: { type: string, example: "GridSphere API v2 is running" }
+
+  /register:
+    post:
+      tags: [Authentication]
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserCreate' }
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserResponse' }
+        "400":
+          description: Email already registered
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        "422":
+          description: Validation error
+
+  /login:
+    post:
+      tags: [Authentication]
+      summary: Login and receive a JWT
+      description: >
+        Matches the original FastAPI OAuth2PasswordRequestForm contract:
+        form-encoded body with field `username` (holds the email) and `password`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, format: email, example: "jane@example.com" }
+                password: { type: string, format: password, example: "secret123" }
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /logout:
+    post:
+      tags: [Authentication]
+      summary: Logout (client-side token discard)
+      security: []
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean, example: true }
+                  message: { type: string, example: "Logged out successfully" }
+
+  /checkSession:
+    get:
+      tags: [Authentication]
+      summary: Verify the current JWT is valid
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Session active
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean, example: true }
+                  message: { type: string, example: "Session active" }
+                  user_id: { type: integer, example: 1 }
+        "401":
+          description: Invalid/expired token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /devices/:
+    post:
+      tags: [Devices]
+      summary: Register a new device (links current user as owner)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceCreate' }
+      responses:
+        "201":
+          description: Device created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeviceResponse' }
+        "401": { description: Unauthorized }
+        "422": { description: Validation error }
+    get:
+      tags: [Devices]
+      summary: List all devices owned/accessible by the current user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DeviceResponse' }
+        "401": { description: Unauthorized }
+
+  /devices/{device_id}/live-data:
+    get:
+      tags: [Devices]
+      summary: Get the most recent reading for a device
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Latest reading
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean, example: true }
+                  data: { type: object }
+        "404":
+          description: Device not found or unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /devices/{device_id}/history:
+    get:
+      tags: [Devices]
+      summary: Get historical readings for a device
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: range
+          in: query
+          description: >
+            daily = today only (since local midnight); weekly = rolling last 7 days;
+            monthly = current calendar month to date (not a rolling 30-day window).
+          schema: { type: string, enum: [daily, weekly, monthly, custom], default: weekly }
+        - name: from
+          in: query
+          description: ISO 8601 date, required when range=custom
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          description: ISO 8601 date, required when range=custom
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Historical readings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean, example: true }
+                  data: { type: array, items: { type: object } }
+        "400":
+          description: Invalid date format
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        "404":
+          description: Device not found or unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /devices/{device_id}/industry:
+    get:
+      tags: [Devices]
+      summary: Get industry type (mock endpoint, preserved as-is)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Industry label
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      industry_label: { type: string, example: "Agriculture" }
+    post:
+      tags: [Devices]
+      summary: Update industry type (mock endpoint, preserved as-is)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean, example: true }
+                  message: { type: string, example: "Industry type updated successfully" }
+
+  /devices/{device_id}/forecast:
+    get:
+      tags: [Devices]
+      summary: 7-day hourly + daily weather forecast for the device's location (Open-Meteo, no API key)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Forecast
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data:
+                    type: object
+                    properties:
+                      hourly:
+                        type: object
+                        properties:
+                          time: { type: array, items: { type: string } }
+                          temperature_2m: { type: array, items: { type: number } }
+                          precipitation_probability: { type: array, items: { type: number } }
+                          wind_speed_10m: { type: array, items: { type: number } }
+                      daily:
+                        type: object
+                        properties:
+                          time: { type: array, items: { type: string } }
+                          temperature_2m_max: { type: array, items: { type: number } }
+                          temperature_2m_min: { type: array, items: { type: number } }
+                          precipitation_probability_max: { type: array, items: { type: number } }
+        "400":
+          description: Device has no latitude/longitude set
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        "404":
+          description: Device not found or unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        "502":
+          description: Forecast provider unreachable or errored
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /devices/{device_id}/insights:
+    get:
+      tags: [Devices]
+      summary: Rule-based agronomy advisories + derived metrics (dew point, heat index, VPD) - NOT machine learning
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Insights
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data:
+                    type: object
+                    properties:
+                      derivedMetrics:
+                        type: object
+                        properties:
+                          dewPointC: { type: number, nullable: true }
+                          heatIndexC: { type: number, nullable: true }
+                          vpdKPa: { type: number, nullable: true }
+                          et0MmPerDay: { type: number, nullable: true, description: "Reference evapotranspiration (Hargreaves-Samani), mm/day" }
+                      advisories:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            severity: { type: string, enum: [info, warning] }
+                            message: { type: string }
+        "404":
+          description: Device not found or unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /devices/{device_id}/history/export:
+    get:
+      tags: [Devices]
+      summary: Export historical readings as CSV
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: range
+          in: query
+          schema: { type: string, enum: [daily, weekly, monthly, custom], default: weekly }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+        "404":
+          description: Device not found or unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /users/:
+    get:
+      tags: [Users]
+      summary: Get the current user's profile
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      name: { type: string }
+                      email: { type: string }
+                      phone: { type: string, nullable: true }
+                      company_name: { type: string, nullable: true }
+                      role: { type: string }
+                      is_active: { type: boolean }
+        "401": { description: Unauthorized }
+        "404": { description: User not found }
+
+  /readings/add:
+    get:
+      tags: [Readings]
+      summary: IoT device data ingestion endpoint (no auth - called directly by hardware)
+      security: []
+      parameters:
+        - name: d_id
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: temp
+          in: query
+          schema: { type: number }
+        - name: humidity
+          in: query
+          schema: { type: number }
+        - name: light_intensity
+          in: query
+          schema: { type: number }
+        - name: pressure
+          in: query
+          schema: { type: number }
+        - name: wind_speed
+          in: query
+          schema: { type: number }
+        - name: rainfall
+          in: query
+          description: mm - only stored if a "rainfall" device_sensor is installed
+          schema: { type: number }
+        - name: soil_moisture
+          in: query
+          description: "% - only stored if a \"soil_moisture\" device_sensor is installed"
+          schema: { type: number }
+        - name: soil_temp
+          in: query
+          description: °C - only stored if a "soil_temp" device_sensor is installed
+          schema: { type: number }
+        - name: solar_radiation
+          in: query
+          description: W/m² - only stored if a "solar_radiation" device_sensor is installed
+          schema: { type: number }
+        - name: uv_index
+          in: query
+          description: only stored if a "uv_index" device_sensor is installed
+          schema: { type: number }
+        - name: battery
+          in: query
+          description: Device battery percent (0-100) - updates the device row, not a sensor reading
+          schema: { type: number }
+        - name: is_solar_charging
+          in: query
+          schema: { type: boolean }
+        - name: signal_strength_dbm
+          in: query
+          schema: { type: integer }
+        - name: firmware_version
+          in: query
+          schema: { type: string }
+        - name: timestamp
+          in: query
+          description: Optional ISO timestamp for historical/backfilled data
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Readings added successfully. Also marks the device "active" and stamps lastSeenAt.
+          content:
+            text/plain:
+              schema: { type: string, example: "Readings added successfully" }
+
+  /readings/{d_id}/history:
+    get:
+      tags: [Readings]
+      summary: Get the latest N readings for a device (for charts)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: d_id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: Readings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data: { type: array, items: { type: object } }
+        "404":
+          description: Device not found or not authorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /sensors/types:
+    get:
+      tags: [Sensors]
+      summary: List all available sensor types
+      security: []
+      responses:
+        "200":
+          description: Sensor types
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data: { type: array, items: { type: object } }
+    post:
+      tags: [Sensors]
+      summary: Create a new sensor type
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SensorTypeCreate' }
+      responses:
+        "201":
+          description: Sensor type created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data: { type: object }
+        "400":
+          description: Sensor type with this code already exists
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /sensors/device/{device_id}:
+    get:
+      tags: [Sensors]
+      summary: List sensors installed on a device
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Installed sensors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data: { type: array, items: { type: object } }
+        "404":
+          description: Device not found or unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /sensors/device:
+    post:
+      tags: [Sensors]
+      summary: Install a new sensor on a device
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceSensorCreate' }
+      responses:
+        "201":
+          description: Sensor installed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data: { type: object }
+        "404":
+          description: Device not found/unauthorized or Sensor Type not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /sensors/device/sensor/{device_sensor_id}:
+    patch:
+      tags: [Sensors]
+      summary: Update an installed sensor (label, calibration, active state)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_sensor_id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceSensorUpdate' }
+      responses:
+        "200":
+          description: Sensor updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  message: { type: string, example: "Sensor updated successfully" }
+                  data: { type: object }
+        "403":
+          description: Unauthorized to modify this device's sensors
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        "404":
+          description: Device sensor not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /subscriptions/plans:
+    get:
+      tags: [Subscriptions]
+      summary: List all available subscription plans
+      security: []
+      responses:
+        "200":
+          description: Plans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data: { type: array, items: { type: object } }
+
+  /subscriptions/device/{device_id}:
+    get:
+      tags: [Subscriptions]
+      summary: Get the active subscription for a device
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Active subscription (or null if none)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data: { type: object, nullable: true }
+                  message: { type: string, nullable: true, example: "No active subscription found" }
+
+  /crops:
+    get:
+      tags: [Crops]
+      summary: List all crops (dynamic - whatever's been added, seeded with mango and apple)
+      security: []
+      responses:
+        "200":
+          description: Crops
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string, example: "Mango" }
+                        code: { type: string, example: "mango" }
+    post:
+      tags: [Crops]
+      summary: Add a new crop to the shared crop list
+      description: >
+        Crops are global reference data, not per-user - adding one makes
+        it selectable by every user's devices. Idempotent: adding a name
+        that already exists (by generated code) returns the existing crop
+        with 200 instead of erroring.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, example: "Grape", minLength: 1, maxLength: 60 }
+      responses:
+        "201":
+          description: Crop created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      name: { type: string, example: "Grape" }
+                      code: { type: string, example: "grape" }
+        "200":
+          description: A crop with this name already existed - returns the existing row
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data: { type: object }
+                  message: { type: string, example: "Crop already existed" }
+        "400":
+          description: Invalid crop name
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /devices/{device_id}/crop:
+    post:
+      tags: [Devices]
+      summary: Set (or clear) the crop planted at a device's location
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [crop_code]
+              properties:
+                crop_code:
+                  type: string
+                  nullable: true
+                  description: One of the codes from GET /crops, or null to clear
+                  example: "mango"
+      responses:
+        "200":
+          description: Updated device
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data: { $ref: '#/components/schemas/DeviceResponse' }
+        "404":
+          description: Device not found/unauthorized, or unknown crop code
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /devices/{device_id}/advisory:
+    get:
+      tags: [Devices]
+      summary: AI-generated, crop-specific advisory and pest/fungal risk assessment (DeepSeek)
+      description: >
+        Requires a crop to be set on the device first (POST
+        /devices/:id/crop). Builds the prompt from the device's real
+        current readings, derived metrics, and forecast - never invents
+        data. Cached for up to an hour; pass ?refresh=true to force
+        regeneration (this calls the DeepSeek API and costs money, so it's
+        not called automatically on every load).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: refresh
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: Advisory
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "success" }
+                  data:
+                    type: object
+                    properties:
+                      summary: { type: string }
+                      precautions: { type: array, items: { type: string } }
+                      risks:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name: { type: string, example: "Powdery Mildew" }
+                            level: { type: string, enum: [low, medium, high] }
+                            reason: { type: string }
+                      cropName: { type: string, example: "Mango" }
+                      generatedAt: { type: string, format: date-time }
+                      fromCache: { type: boolean }
+        "400":
+          description: Device has no crop set
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        "404":
+          description: Device not found or unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        "502":
+          description: DeepSeek API unreachable, errored, or returned an unexpected response
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        "503":
+          description: DEEPSEEK_API_KEY not configured
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }

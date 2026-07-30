@@ -66,6 +66,23 @@ button {
   width: 100%;
 }
 
+/* Wider variant for admin/desktop-oriented pages (Device Fleet, Device
+   Detail) that shouldn't be squeezed into the mobile-app-width column the
+   field-operator pages use. Still fluid: it only raises the max-width cap,
+   so on narrow viewports it behaves exactly like .container. */
+.container-wide {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .container-wide {
+    padding: 0 16px;
+  }
+}
+
 .centered-shell {
   flex: 1;
   display: flex;
@@ -761,8 +778,31 @@ table.data-table {
   border-color: var(--brand-green);
 }
 
+.history-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 32px;
+}
+
+.history-split > .panel {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .history-split {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .info-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .history-split {
+    gap: 16px;
   }
 }

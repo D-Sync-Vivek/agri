@@ -46,7 +46,22 @@ const NON_SENSOR_QUERY_KEYS = new Set([
  * reflect reality.
  */
 export async function addReading(req: Request, res: Response): Promise<void> {
-  const dId = parseInt(req.query.d_id as string, 10);
+  const dIdParam = req.query.d_id as string | undefined;
+  if (!dIdParam) {
+    res.status(400).type("text/plain").send("Missing d_id");
+    return;
+  }
+
+  // d_id is the device's public UID (device_uid), not the internal numeric
+  // primary key - this is what's printed/configured on the hardware and
+  // shown as "UID" in the admin fleet table.
+  const device = await prisma.device.findUnique({ where: { deviceUid: dIdParam } });
+  if (!device) {
+    res.status(404).type("text/plain").send("Unknown device");
+    return;
+  }
+  const dId = device.id;
+
   const timestamp = req.query.timestamp as string | undefined;
 
   const batteryLevel = toFloatOrUndefined(req.query.battery);

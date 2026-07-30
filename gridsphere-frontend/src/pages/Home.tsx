@@ -5,6 +5,7 @@ import { listDeviceSensors, getRecentReadings } from "../api/sensors";
 import { DeviceSensor, SensorReading } from "../types";
 import { getMetricMeta, formatMetricValue } from "../utils/metrics";
 import { Link } from "react-router-dom";
+import { WifiOffIcon } from "../components/icons";
 import InsightsPanel from "../components/InsightsPanel";
 import ForecastPanel from "../components/ForecastPanel";
 import CropSelector from "../components/CropSelector";
@@ -24,6 +25,19 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "chat", label: "Chat" },
 ];
 
+/** "9h 20m ago" / "3m ago" / "just now" style relative time, matching the compact station-console look. */
+function formatRelativeTime(isoDate: string): string {
+  const diffMs = Date.now() - new Date(isoDate).getTime();
+  if (diffMs < 0) return "just now";
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "just now";
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  if (days > 0) return `${days}d ${hours % 24}h ago`;
+  if (hours > 0) return `${hours}h ${minutes % 60}m ago`;
+  return `${minutes}m ago`;
+}
+
 export default function Home() {
   const { selectedDevice, isLoading: devicesLoading, error: devicesError } = useDevices();
   const { user } = useAuth();
@@ -32,6 +46,7 @@ export default function Home() {
   const [sensors, setSensors] = useState<DeviceSensor[]>([]);
   const [readings, setReadings] = useState<SensorReading[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!selectedDevice) return;
@@ -40,6 +55,7 @@ export default function Home() {
       .then(([s, r]) => {
         setSensors(s);
         setReadings(r);
+        setUpdatedAt(new Date());
       })
       .catch((err) => setError(err?.response?.data?.detail || "Could not load field conditions"));
   }, [selectedDevice]);
@@ -98,30 +114,31 @@ export default function Home() {
 
   return (
     <div className="container">
-      {isOffline && (
-        <div className="offline-banner">
-          <div>⚠️</div>
-          <div>
-            <strong>Device Offline</strong>
-            <p>
-              No signal for over {selectedDevice.frequency * 2} minutes (2× its {selectedDevice.frequency}-min reporting
-              frequency). Data below is stale.
-            </p>
-          </div>
+      <div className="page-header" style={{ marginTop: 16 }}>
+        <h1 className="page-title">Device {selectedDevice.id} Overview</h1>
+        {updatedAt && (
+          <span className="muted" style={{ fontSize: 13 }}>
+            Updated {updatedAt.toLocaleTimeString(undefined, { hour12: false })}
+          </span>
+        )}
+      </div>
+
+      {(isOffline || isNeverConnected) && (
+        <div className="offline-banner" style={{ alignItems: "center", padding: "12px 16px", margin: "12px 0 20px" }}>
+          <WifiOffIcon size={18} />
+          <span style={{ fontSize: 14, fontWeight: 600 }}>
+            {isNeverConnected ? "Not yet connected" : "Inactive"}
+            {selectedDevice.lastSeenAt && (
+              <>
+                {" "}
+                • Last seen {formatRelativeTime(selectedDevice.lastSeenAt)}
+              </>
+            )}
+          </span>
         </div>
       )}
 
-      {isNeverConnected && (
-        <div className="offline-banner" style={{ background: "#F4F6F5", borderColor: "var(--hairline)", color: "var(--ink-dim)" }}>
-          <div>ℹ️</div>
-          <div>
-            <strong style={{ color: "var(--ink)" }}>Not yet connected</strong>
-            <p>This device hasn't sent any data yet. It'll show as Online once the first reading arrives.</p>
-          </div>
-        </div>
-      )}
-
-      <div className="panel" style={{ marginTop: 16, marginBottom: 20 }}>
+      <div className="panel" style={{ marginBottom: 20 }}>
         <div className="panel-header">
           <span className="panel-title">Field Information</span>
         </div>
@@ -275,5 +292,3 @@ export default function Home() {
     </div>
   );
 }
-
-

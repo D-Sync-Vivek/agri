@@ -101,4 +101,14 @@ export const RainIcon = ({ size = 18 }: IconProps) => (
   </svg>
 );
 
-
+export const WifiOffIcon = ({ size = 18 }: IconProps) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M2 2l20 20" strokeLinecap="round" />
+    <path d="M8.5 16.5a5 5 0 0 1 7 0" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M5 12.5a10 10 0 0 1 3.5-2.3" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12.5 9.02c2.8.1 5.5 1.2 7.5 3.3" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M1.5 9a15 15 0 0 1 4-2.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M16 6.2a15 15 0 0 1 6.5 3.8" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);

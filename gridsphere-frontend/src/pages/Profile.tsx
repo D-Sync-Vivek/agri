@@ -22,56 +22,54 @@ export default function Profile() {
   }
 
   return (
-    <div className="container">
-      <div className="page-header">
+    <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <p className="page-eyebrow">Account</p>
-          <h1 className="page-title">Profile</h1>
+          <p className="text-xs font-bold uppercase tracking-widest text-brand-600 mb-1">Account</p>
+          <h1 className="text-2xl font-extrabold">Profile</h1>
         </div>
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
 
-      <div className="panel" style={{ marginBottom: 20 }}>
-        <div className="panel-header">
-          <span className="panel-title">Account details</span>
-          <span className="role-badge">{profile?.role || user?.role || "user"}</span>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">Account details</span>
+          <span className="inline-block text-xs font-bold uppercase text-brand-700 bg-brand-50 px-3 py-1 rounded-full">
+            {profile?.role || user?.role || "user"}
+          </span>
         </div>
-        <div className="panel-body">
-          <div className="info-grid">
+        <div className="p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <div className="info-item-label">Name</div>
-              <div className="info-item-value">{profile?.name || user?.name}</div>
+              <div className="text-xs text-ink-dim">Name</div>
+              <div className="font-bold">{profile?.name || user?.name}</div>
             </div>
             <div>
-              <div className="info-item-label">Email</div>
-              <div className="info-item-value">{profile?.email || user?.email}</div>
+              <div className="text-xs text-ink-dim">Email</div>
+              <div className="font-bold">{profile?.email || user?.email}</div>
             </div>
             {profile?.phone && (
               <div>
-                <div className="info-item-label">Phone</div>
-                <div className="info-item-value">{profile.phone}</div>
+                <div className="text-xs text-ink-dim">Phone</div>
+                <div className="font-bold">{profile.phone}</div>
               </div>
             )}
             {profile?.company_name && (
               <div>
-                <div className="info-item-label">Company</div>
-                <div className="info-item-value">{profile.company_name}</div>
+                <div className="text-xs text-ink-dim">Company</div>
+                <div className="font-bold">{profile.company_name}</div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <button className="btn-secondary" onClick={handleLogout}>
+      <button onClick={handleLogout} className="bg-transparent border border-gray-200 text-ink px-4 py-2.5 rounded-lg hover:border-brand-600 transition">
         Sign out
       </button>
 
-      <Link to="/plans" style={{ display: "block", marginTop: 16, fontSize: 13, color: "var(--brand-green)", fontWeight: 600, textDecoration: "none" }}>
-        View subscription plans →
-      </Link>
+      <Link to="/plans" className="block mt-4 text-sm text-brand-600 font-semibold hover:underline">View subscription plans →</Link>
     </div>
   );
 }
-
-

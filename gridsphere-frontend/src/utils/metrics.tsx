@@ -74,4 +74,25 @@ export function formatMetricValue(sensorLabel: string, value: number): string {
   if (meta.format) return meta.format(value);
   return `${value.toFixed(1)}${meta.unit ? " " + meta.unit : ""}`;
 }
+export function toDatetimeLocalValue(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
 
+export function getLocalISOStringWithOffset(localDateTime: string): string {
+  if (!localDateTime) return "";
+  const withSeconds = localDateTime.length === 16 ? `${localDateTime}:00` : localDateTime;
+  const offsetMinutes = new Date().getTimezoneOffset();
+  const offset = -offsetMinutes;
+  const sign = offset >= 0 ? '+' : '-';
+  const abs = Math.abs(offset);
+  const hours = Math.floor(abs / 60).toString().padStart(2, "0");
+  const minutes = (abs % 60).toString().padStart(2, "0");
+  const offsetStr = `${sign}${hours}:${minutes}`;
+  return withSeconds + offsetStr;
+}

@@ -26,20 +26,27 @@ export default function Register() {
   }
 
   return (
-    <div className="centered-shell">
-      <form className="panel auth-card" onSubmit={handleSubmit}>
-        <p className="auth-eyebrow">New Station</p>
-        <h1 className="auth-title">Create your account</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-brand-600 via-brand-600 to-bg px-4 py-12">
+      <form onSubmit={handleSubmit} className="w-full max-w-md bg-white rounded-2xl shadow-card p-8">
+        <p className="text-xs font-bold uppercase tracking-widest text-brand-600 mb-1">New Station</p>
+        <h1 className="text-2xl font-bold mb-6">Create your account</h1>
 
-        {error && <div className="error-banner">{error}</div>}
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
 
-        <div className="field">
-          <label htmlFor="name">Full name</label>
-          <input id="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" />
+        <div className="mb-4">
+          <label htmlFor="name" className="block text-xs font-semibold text-ink-dim mb-1.5">Full name</label>
+          <input
+            id="name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Jane Doe"
+            className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-600 transition"
+          />
         </div>
 
-        <div className="field">
-          <label htmlFor="email">Email</label>
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-xs font-semibold text-ink-dim mb-1.5">Email</label>
           <input
             id="email"
             type="email"
@@ -47,11 +54,12 @@ export default function Register() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
+            className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-600 transition"
           />
         </div>
 
-        <div className="field">
-          <label htmlFor="password">Password</label>
+        <div className="mb-6">
+          <label htmlFor="password" className="block text-xs font-semibold text-ink-dim mb-1.5">Password</label>
           <input
             id="password"
             type="password"
@@ -60,19 +68,18 @@ export default function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="At least 6 characters"
+            className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-600 transition"
           />
         </div>
 
-        <button className="btn-primary" type="submit" disabled={isSubmitting}>
+        <button type="submit" disabled={isSubmitting} className="w-full bg-brand-600 text-white font-bold py-3 rounded-lg hover:brightness-105 transition disabled:opacity-60">
           {isSubmitting ? "Creating account…" : "Create account"}
         </button>
 
-        <p className="auth-switch">
-          Already registered? <Link to="/login">Sign in</Link>
+        <p className="text-sm text-ink-dim text-center mt-5">
+          Already registered? <Link to="/login" className="text-brand-600 font-bold">Sign in</Link>
         </p>
       </form>
     </div>
   );
 }
-
-

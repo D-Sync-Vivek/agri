@@ -1,28 +1,37 @@
-# Build stage
+# ---- Builder stage ----
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy package files AND Prisma schema FIRST
 COPY package*.json ./
+COPY prisma ./prisma
+
+# Install ALL dependencies (including dev) – this will run prisma generate successfully
 RUN npm ci
 
-# Copy source and build
+# Copy the rest of the application source
 COPY . .
-# VITE_API_BASE_URL is passed at build time via ARG
-ARG VITE_API_BASE_URL
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+# (Optional) Generate Prisma client explicitly
+RUN npx prisma generate
+
+# Build the TypeScript application
 RUN npm run build
 
-# Production stage – serve with Nginx
-FROM nginx:alpine
+# ---- Runtime stage ----
+FROM node:20-alpine
 
-# Copy built assets to Nginx's serving directory
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-# Copy a custom Nginx config (optional, see below)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy production dependencies from builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package*.json ./
 
-EXPOSE 80
+# Expose the API port (internal)
+EXPOSE 8000
 
-CMD ["nginx", "-g", "daemon off;"]root@srv1541214:~/agri#
+# Start the built server
+CMD ["node", "dist/server.js"]

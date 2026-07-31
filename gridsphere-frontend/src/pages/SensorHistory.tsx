@@ -40,15 +40,12 @@ export default function SensorHistory() {
         if (!found) setError("Sensor not found on this device.");
       })
       .catch((err) => setError(err?.response?.data?.detail || "Could not load sensor"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dId, sId]);
 
   useEffect(() => {
     setIsLoading(true);
     getDeviceHistory(dId, range)
       .then((all: SensorReading[]) => {
-        // /devices/:id/history returns readings for every sensor on the
-        // device - keep only this one's.
         setReadings(all.filter((r) => r.deviceSensorId === sId));
       })
       .catch((err) => setError(err?.response?.data?.detail || "Could not load history"))
@@ -63,7 +60,7 @@ export default function SensorHistory() {
   );
 
   const { max, min, avg } = useMemo(() => {
-    if (sorted.length === 0) return { max: null as number | null, min: null as number | null, avg: null as number | null };
+    if (sorted.length === 0) return { max: null, min: null, avg: null };
     const values = sorted.map((r) => r.value);
     const sum = values.reduce((a, b) => a + b, 0);
     return { max: Math.max(...values), min: Math.min(...values), avg: sum / values.length };
@@ -98,28 +95,28 @@ export default function SensorHistory() {
   }
 
   return (
-    <div className="container">
-      <div className="page-header">
+    <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <p className="page-eyebrow">
-            <Link to="/" className="muted" style={{ textDecoration: "none" }}>
-              ← Field Conditions
-            </Link>
+          <p className="text-xs font-bold uppercase tracking-widest text-brand-600 mb-1">
+            <Link to="/" className="text-ink-dim hover:text-brand-600 transition">← Field Conditions</Link>
           </p>
-          <h1 className="page-title flex-row" style={{ gap: 10 }}>
+          <h1 className="text-2xl font-extrabold flex items-center gap-2">
             {meta?.icon}
             {meta?.name || "Sensor"} History
           </h1>
         </div>
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
 
-      <div className="tab-row">
+      <div className="flex gap-1 mb-4 bg-brand-50 rounded-full p-1 overflow-x-auto">
         {RANGE_TABS.map((t) => (
           <button
             key={t.key}
-            className={`tab-btn ${range === t.key ? "active" : ""}`}
+            className={`flex-1 px-4 py-2 text-sm font-semibold rounded-full whitespace-nowrap transition ${
+              range === t.key ? 'bg-brand-600 text-white' : 'text-brand-700 hover:bg-brand-100'
+            }`}
             onClick={() => setRange(t.key)}
           >
             {t.label}
@@ -127,62 +124,54 @@ export default function SensorHistory() {
         ))}
       </div>
 
-      <div className="readout-grid" style={{ marginBottom: 20 }}>
-        <div className="readout-tile" style={{ cursor: "default" }}>
-          <div className="readout-label">Max</div>
+      <div className="grid grid-cols-3 gap-4 mb-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+          <div className="text-sm text-ink-dim font-medium">Max</div>
           <div>
-            <span className="readout-value">{max !== null ? max.toFixed(1) : "—"}</span>
-            <span className="readout-unit">{meta?.unit}</span>
+            <span className="text-2xl font-extrabold">{max !== null ? max.toFixed(1) : "—"}</span>
+            <span className="text-sm font-semibold text-ink-dim ml-1">{meta?.unit}</span>
           </div>
         </div>
-        <div className="readout-tile" style={{ cursor: "default" }}>
-          <div className="readout-label">Min</div>
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+          <div className="text-sm text-ink-dim font-medium">Min</div>
           <div>
-            <span className="readout-value">{min !== null ? min.toFixed(1) : "—"}</span>
-            <span className="readout-unit">{meta?.unit}</span>
+            <span className="text-2xl font-extrabold">{min !== null ? min.toFixed(1) : "—"}</span>
+            <span className="text-sm font-semibold text-ink-dim ml-1">{meta?.unit}</span>
           </div>
         </div>
-        <div className="readout-tile" style={{ cursor: "default" }}>
-          <div className="readout-label">Average</div>
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+          <div className="text-sm text-ink-dim font-medium">Average</div>
           <div>
-            <span className="readout-value">{avg !== null ? avg.toFixed(1) : "—"}</span>
-            <span className="readout-unit">{meta?.unit}</span>
+            <span className="text-2xl font-extrabold">{avg !== null ? avg.toFixed(1) : "—"}</span>
+            <span className="text-sm font-semibold text-ink-dim ml-1">{meta?.unit}</span>
           </div>
         </div>
       </div>
 
-      <div className="panel" style={{ marginBottom: 32 }}>
-        <div className="panel-header">
-          <span className="panel-title">Trend</span>
-          <div className="flex-row">
-            <span className="muted" style={{ fontSize: 12 }}>
-              {rangeCaption}
-            </span>
-            <button className="btn-ghost" onClick={handleExport} disabled={isExporting}>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-8">
+        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">Trend</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-ink-dim">{rangeCaption}</span>
+            <button onClick={handleExport} disabled={isExporting} className="bg-brand-50 text-brand-700 font-semibold px-4 py-2 rounded-full text-sm hover:brightness-95 transition disabled:opacity-50">
               {isExporting ? "Exporting…" : "Export CSV"}
             </button>
           </div>
         </div>
-        <div className="panel-body">
+        <div className="p-5">
           {isLoading ? (
-            <div className="loading-text">Loading history…</div>
+            <div className="text-center text-ink-dim py-12">Loading history…</div>
           ) : chartData.length === 0 ? (
-            <p className="muted">No readings in this range yet.</p>
+            <p className="text-ink-dim">No readings in this range yet.</p>
           ) : (
             <ResponsiveContainer width="100%" height={320}>
               <LineChart data={chartData}>
-                <CartesianGrid stroke="var(--hairline)" strokeDasharray="3 3" />
-                <XAxis dataKey="time" stroke="var(--ink-dim)" fontSize={11} tick={{ fill: "var(--ink-dim)" }} />
-                <YAxis
-                  stroke="var(--ink-dim)"
-                  fontSize={11}
-                  tick={{ fill: "var(--ink-dim)" }}
-                  unit={meta?.unit}
-                  domain={["auto", "auto"]}
-                />
+                <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" />
+                <XAxis dataKey="time" stroke="#6b7a73" fontSize={11} tick={{ fill: "#6b7a73" }} />
+                <YAxis stroke="#6b7a73" fontSize={11} tick={{ fill: "#6b7a73" }} unit={meta?.unit} domain={["auto", "auto"]} />
                 <Tooltip
-                  contentStyle={{ background: "var(--card)", border: "1px solid var(--hairline)", fontSize: 12 }}
-                  labelStyle={{ color: "var(--ink)" }}
+                  contentStyle={{ background: "#fff", border: "1px solid #e5e7eb", fontSize: 12 }}
+                  labelStyle={{ color: "#1a2421" }}
                   formatter={(value: number) => [`${value.toFixed(1)} ${meta?.unit ?? ""}`, meta?.name ?? "value"]}
                 />
                 <Line type="monotone" dataKey="value" stroke="#1F6E44" strokeWidth={2} dot={false} connectNulls />
@@ -194,5 +183,3 @@ export default function SensorHistory() {
     </div>
   );
 }
-
-

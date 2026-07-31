@@ -112,3 +112,11 @@ export const WifiOffIcon = ({ size = 18 }: IconProps) => (
     <circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none" />
   </svg>
 );
+
+export const AdminIcon = ({ size = 20 }: IconProps) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="9" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M19 11v6m3-3h-6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);

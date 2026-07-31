@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   adminListDevices,
   adminCreateDevice,
-  adminUpdateDevice,
   adminDeleteDevice,
   adminAssignDevice,
   adminUnassignDevice,
@@ -107,64 +106,62 @@ export default function AdminDevices() {
   }
 
   return (
-    <div className="container">
-      <div className="page-header">
+    <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <p className="page-eyebrow">Admin</p>
-          <h1 className="page-title">Device Management</h1>
+          <p className="text-xs font-bold uppercase tracking-widest text-brand-600 mb-1">Admin</p>
+          <h1 className="text-2xl font-extrabold">Device Management</h1>
         </div>
-        <div className="flex-row">
-          <button className="btn-secondary" onClick={loadDevices} disabled={isLoading}>
+        <div className="flex gap-2">
+          <button onClick={loadDevices} disabled={isLoading} className="bg-transparent border border-gray-200 text-ink px-4 py-2 rounded-lg hover:border-brand-600 transition disabled:opacity-60">
             Refresh
           </button>
-          <button className="btn-primary" onClick={() => setShowCreate(true)}>
+          <button onClick={() => setShowCreate(true)} className="bg-brand-600 text-white font-bold px-4 py-2 rounded-lg hover:brightness-105 transition">
             + New Device
           </button>
         </div>
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
-      {isLoading && <div className="loading-text">Loading devices…</div>}
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
+      {isLoading && <div className="text-center text-ink-dim py-12">Loading devices…</div>}
 
       {!isLoading && devices.length === 0 && (
-        <div className="empty-state panel">
-          <h3>No devices found</h3>
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200 shadow-card">
+          <h3 className="text-lg font-bold mb-2">No devices found</h3>
         </div>
       )}
 
       {!isLoading && devices.length > 0 && (
-        <div className="panel" style={{ padding: 0 }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>UID</th>
-                <th>Name</th>
-                <th>Location</th>
-                <th>Sensors</th>
-                <th>Users</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {devices.map((d) => (
-                <tr key={d.id}>
-                  <td>{d.deviceUid}</td>
-                  <td>{d.deviceName || "—"}</td>
-                  <td>{d.locationName || "—"}</td>
-                  <td>{d.sensorCount}</td>
-                  <td>{d.users.length}</td>
-                  <td>
-                    <button className="btn-ghost" onClick={() => openAssign(d.id)}>
-                      Assign
-                    </button>
-                    <button className="btn-ghost" onClick={() => handleDelete(d.id)} style={{ color: "var(--red)" }}>
-                      Delete
-                    </button>
-                  </td>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">UID</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">Name</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">Location</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">Sensors</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">Users</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {devices.map((d) => (
+                  <tr key={d.id} className="border-b border-gray-100 last:border-0">
+                    <td className="px-4 py-3">{d.deviceUid}</td>
+                    <td className="px-4 py-3">{d.deviceName || "—"}</td>
+                    <td className="px-4 py-3">{d.locationName || "—"}</td>
+                    <td className="px-4 py-3">{d.sensorCount}</td>
+                    <td className="px-4 py-3">{d.users.length}</td>
+                    <td className="px-4 py-3 flex gap-2">
+                      <button onClick={() => openAssign(d.id)} className="bg-brand-50 text-brand-700 font-semibold px-3 py-1 rounded-full text-xs hover:brightness-95 transition">Assign</button>
+                      <button onClick={() => handleDelete(d.id)} className="bg-red-50 text-red-600 font-semibold px-3 py-1 rounded-full text-xs hover:brightness-95 transition">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -172,43 +169,46 @@ export default function AdminDevices() {
       {showCreate && (
         <div className="modal-backdrop" onClick={() => setShowCreate(false)}>
           <form className="modal-card" onClick={(e) => e.stopPropagation()} onSubmit={handleCreate}>
-            <p className="section-title">New Device</p>
-            <div className="field">
-              <label>Device UID</label>
-              <input
-                required
-                value={form.device_uid}
-                onChange={(e) => setForm({ ...form, device_uid: e.target.value })}
-              />
+            <p className="text-xs font-bold uppercase tracking-wider text-ink-dim mb-4">New Device</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-ink-dim mb-1.5">Device UID</label>
+                <input
+                  required
+                  value={form.device_uid}
+                  onChange={(e) => setForm({ ...form, device_uid: e.target.value })}
+                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-dim mb-1.5">Name</label>
+                <input
+                  value={form.device_name || ""}
+                  onChange={(e) => setForm({ ...form, device_name: e.target.value })}
+                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-dim mb-1.5">Location</label>
+                <input
+                  value={form.location_name || ""}
+                  onChange={(e) => setForm({ ...form, location_name: e.target.value })}
+                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-dim mb-1.5">Reporting frequency (min)</label>
+                <input
+                  type="number"
+                  value={form.frequency}
+                  onChange={(e) => setForm({ ...form, frequency: parseInt(e.target.value, 10) || 60 })}
+                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                />
+              </div>
             </div>
-            <div className="field">
-              <label>Name</label>
-              <input
-                value={form.device_name || ""}
-                onChange={(e) => setForm({ ...form, device_name: e.target.value })}
-              />
-            </div>
-            <div className="field">
-              <label>Location</label>
-              <input
-                value={form.location_name || ""}
-                onChange={(e) => setForm({ ...form, location_name: e.target.value })}
-              />
-            </div>
-            <div className="field">
-              <label>Reporting frequency (min)</label>
-              <input
-                type="number"
-                value={form.frequency}
-                onChange={(e) => setForm({ ...form, frequency: parseInt(e.target.value, 10) || 60 })}
-              />
-            </div>
-            <div className="flex-row" style={{ marginTop: 20 }}>
-              <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>
-                Cancel
-              </button>
-              <div className="spacer" />
-              <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button type="button" onClick={() => setShowCreate(false)} className="bg-transparent border border-gray-200 text-ink px-4 py-2 rounded-lg hover:border-brand-600 transition">Cancel</button>
+              <button type="submit" disabled={isSubmitting} className="bg-brand-600 text-white font-bold px-4 py-2 rounded-lg hover:brightness-105 transition disabled:opacity-60">
                 {isSubmitting ? "Creating…" : "Create"}
               </button>
             </div>
@@ -220,59 +220,63 @@ export default function AdminDevices() {
       {assignDeviceId !== null && (
         <div className="modal-backdrop" onClick={() => setAssignDeviceId(null)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <p className="section-title">Manage Assignments</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-ink-dim mb-4">Manage Assignments</p>
 
-            <table className="data-table" style={{ marginBottom: 16 }}>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {assignUsers.map((u) => (
-                  <tr key={u.id}>
-                    <td>{u.name}</td>
-                    <td>{u.email}</td>
-                    <td>{u.isOwner ? "owner" : u.role}</td>
-                    <td>
-                      <button className="btn-ghost" onClick={() => handleUnassign(u.id)} style={{ color: "var(--red)" }}>
-                        Remove
-                      </button>
-                    </td>
+            <div className="overflow-x-auto mb-4">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-2 py-2">Name</th>
+                    <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-2 py-2">Email</th>
+                    <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-2 py-2">Role</th>
+                    <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-2 py-2"></th>
                   </tr>
-                ))}
-                {assignUsers.length === 0 && (
-                  <tr>
-                    <td colSpan={4}>No users assigned</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {assignUsers.map((u) => (
+                    <tr key={u.id} className="border-b border-gray-100 last:border-0">
+                      <td className="px-2 py-2">{u.name}</td>
+                      <td className="px-2 py-2">{u.email}</td>
+                      <td className="px-2 py-2">{u.isOwner ? "owner" : u.role}</td>
+                      <td className="px-2 py-2">
+                        <button onClick={() => handleUnassign(u.id)} className="text-red-600 text-xs font-semibold hover:underline">Remove</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {assignUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="text-ink-dim text-center py-2">No users assigned</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             <form onSubmit={handleAssign}>
-              <div className="field">
-                <label>User ID to assign</label>
-                <input value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)} placeholder="e.g. 4" />
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-ink-dim mb-1.5">User ID to assign</label>
+                <input
+                  value={assignUserId}
+                  onChange={(e) => setAssignUserId(e.target.value)}
+                  placeholder="e.g. 4"
+                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                />
               </div>
-              <div className="field">
-                <label>Role</label>
-                <select value={assignRole} onChange={(e) => setAssignRole(e.target.value)}>
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-ink-dim mb-1.5">Role</label>
+                <select
+                  value={assignRole}
+                  onChange={(e) => setAssignRole(e.target.value)}
+                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                >
                   <option value="viewer">Viewer</option>
                   <option value="editor">Editor</option>
                   <option value="owner">Owner</option>
                 </select>
               </div>
-              <div className="flex-row" style={{ marginTop: 20 }}>
-                <button type="button" className="btn-secondary" onClick={() => setAssignDeviceId(null)}>
-                  Close
-                </button>
-                <div className="spacer" />
-                <button type="submit" className="btn-primary">
-                  Assign
-                </button>
+              <div className="flex items-center justify-end gap-3">
+                <button type="button" onClick={() => setAssignDeviceId(null)} className="bg-transparent border border-gray-200 text-ink px-4 py-2 rounded-lg hover:border-brand-600 transition">Close</button>
+                <button type="submit" className="bg-brand-600 text-white font-bold px-4 py-2 rounded-lg hover:brightness-105 transition">Assign</button>
               </div>
             </form>
           </div>

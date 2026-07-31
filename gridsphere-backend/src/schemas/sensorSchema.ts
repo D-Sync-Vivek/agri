@@ -32,3 +32,5 @@ export const DeviceSensorUpdateSchema = z.object({
   is_active: z.boolean().optional(),
 });
 export type DeviceSensorUpdate = z.infer<typeof DeviceSensorUpdateSchema>;
+
+export const SensorTypeUpdateSchema = SensorTypeCreateSchema.partial();

@@ -26,10 +26,18 @@ export async function getLiveData(deviceId: number) {
   return data.data;
 }
 
-export type HistoryRange = "daily" | "weekly" | "monthly";
+export type HistoryRange = "daily" | "weekly" | "monthly" | "custom";
 
-export async function getDeviceHistory(deviceId: number, range: HistoryRange = "weekly") {
-  const { data } = await apiClient.get(`/devices/${deviceId}/history`, { params: { range } });
+export async function getDeviceHistory(
+  deviceId: number,
+  range: HistoryRange = "weekly",
+  from?: string,
+  to?: string
+) {
+  const params: Record<string, string> = { range };
+  if (from) params.from = from;
+  if (to) params.to = to;
+  const { data } = await apiClient.get(`/devices/${deviceId}/history`, { params });
   return data.data;
 }
 
@@ -43,25 +51,22 @@ export async function getInsights(deviceId: number): Promise<Insights> {
   return data.data;
 }
 
-/**
- * AI-generated, crop-specific advisory (DeepSeek). Requires the device to
- * have a crop set (POST /devices/:id/crop) - throws 400 otherwise.
- * Cached server-side for up to an hour; pass refresh=true to force a new
- * (billed) generation.
- */
 export async function getAdvisory(deviceId: number, refresh = false): Promise<AiAdvisory> {
   const { data } = await apiClient.get(`/devices/${deviceId}/advisory`, { params: refresh ? { refresh: true } : {} });
   return data.data;
 }
 
-/**
- * Downloads the CSV export for a device's history. Done via a blob fetch
- * (rather than a plain <a href>) because the endpoint requires the
- * Authorization header, which a bare link can't send.
- */
-export async function downloadHistoryCsv(deviceId: number, range: HistoryRange): Promise<void> {
+export async function downloadHistoryCsv(
+  deviceId: number,
+  range: HistoryRange,
+  from?: string,
+  to?: string
+): Promise<void> {
+  const params: Record<string, string> = { range };
+  if (from) params.from = from;
+  if (to) params.to = to;
   const response = await apiClient.get(`/devices/${deviceId}/history/export`, {
-    params: { range },
+    params,
     responseType: "blob",
   });
   const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -82,19 +87,16 @@ export interface DeviceAssignment {
   user: { id: number; name: string; email: string; role: string };
 }
 
-/** Admin only. Grants a user (by email) access to a device. */
 export async function assignDeviceToUser(deviceId: number, email: string): Promise<{ message: string }> {
   const { data } = await apiClient.post(`/devices/${deviceId}/assign`, { email });
   return data;
 }
 
-/** Admin only. Lists who currently has access to a device. */
 export async function listDeviceAssignments(deviceId: number): Promise<DeviceAssignment[]> {
   const { data } = await apiClient.get(`/devices/${deviceId}/assignments`);
   return data.data;
 }
 
-/** Admin only. Revokes a user's access to a device (cannot remove the owner). */
 export async function unassignDeviceFromUser(deviceId: number, userId: number): Promise<void> {
   await apiClient.delete(`/devices/${deviceId}/assign/${userId}`);
 }
@@ -104,10 +106,20 @@ export async function getWindAnalytics(deviceId: number, range: HistoryRange = "
   return data.data;
 }
 
-/** Returns null if the device has no rainfall sensor installed - a normal state, not an error. */
 export async function getRainAnalytics(deviceId: number, range: HistoryRange = "weekly"): Promise<RainAnalytics | null> {
   const { data } = await apiClient.get(`/devices/${deviceId}/rain-analytics`, { params: { range } });
   return data.data;
 }
 
-
+// ===== NEW DELETE FUNCTION =====
+export async function deleteDeviceReadings(
+  deviceId: number,
+  from?: string,
+  to?: string
+): Promise<{ message: string }> {
+  const params: Record<string, string> = {};
+  if (from) params.from = from;
+  if (to) params.to = to;
+  const { data } = await apiClient.delete(`/devices/${deviceId}/readings`, { params });
+  return data;
+}

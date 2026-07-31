@@ -17,6 +17,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminDevices from "./pages/AdminDevices";
 import AdminOverview from "./pages/AdminOverview";
 import HomeOrRedirect from "./components/HomeOrRedirect";
+import AdminSensors from "./pages/AdminSensors";
 
 export default function App() {
   return (
@@ -25,30 +26,27 @@ export default function App() {
         <DeviceProvider>
           <div className="app-shell">
             <AppHeader />
-            <div style={{ flex: 1 }}>
+            <main className="flex-1 w-full">
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
-
-                {/* Shared: both "user" and "admin" roles see these */}
                 <Route element={<ProtectedRoute allowedRoles={["user", "admin"]} />}>
                   <Route path="/" element={<HomeOrRedirect />} />
                   <Route path="/devices/:deviceId/sensors/:sensorId/history" element={<SensorHistory />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/plans" element={<Plans />} />
                 </Route>
-
-                {/* Admin only */}
                 <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
                   <Route path="/devices" element={<Dashboard />} />
                   <Route path="/devices/:deviceId" element={<DeviceDetail />} />
                   <Route path="/admin" element={<AdminOverview />} />
                   <Route path="/admin/devices" element={<AdminDevices />} />
                   <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/sensors" element={<AdminSensors />} />
                 </Route>
               </Routes>
-            </div>
+            </main>
             <BottomNav />
           </div>
         </DeviceProvider>

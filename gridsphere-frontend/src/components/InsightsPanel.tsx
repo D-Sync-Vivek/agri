@@ -12,8 +12,8 @@ export default function InsightsPanel({ deviceId }: { deviceId: number }) {
       .catch((err) => setError(err?.response?.data?.detail || "Could not load insights"));
   }, [deviceId]);
 
-  if (error) return null; // don't clutter Home with a hard error for an optional panel
-  if (!insights) return <div className="loading-text">Loading insights…</div>;
+  if (error) return null; // hide on error
+  if (!insights) return <div className="text-center text-ink-dim py-6">Loading insights…</div>;
 
   const { derivedMetrics, advisories } = insights;
   const hasAnyDerived =
@@ -23,49 +23,47 @@ export default function InsightsPanel({ deviceId }: { deviceId: number }) {
     derivedMetrics.et0MmPerDay !== null;
 
   return (
-    <div className="panel" style={{ marginBottom: 20 }}>
-      <div className="panel-header">
-        <span className="panel-title">Rule-Based Insights</span>
-        <span className="muted" style={{ fontSize: 11 }}>
-          not AI/ML
-        </span>
+    <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-5">
+      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">Rule-Based Insights</span>
+        <span className="text-xs text-ink-dim">not AI/ML</span>
       </div>
-      <div className="panel-body">
+      <div className="p-5">
         {hasAnyDerived && (
-          <div className="readout-grid" style={{ marginBottom: advisories.length > 0 ? 16 : 0 }}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
             {derivedMetrics.dewPointC !== null && (
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">Dew Point</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">Dew Point</div>
                 <div>
-                  <span className="readout-value">{derivedMetrics.dewPointC}</span>
-                  <span className="readout-unit">°C</span>
+                  <span className="text-2xl font-extrabold">{derivedMetrics.dewPointC}</span>
+                  <span className="text-sm font-semibold text-ink-dim ml-1">°C</span>
                 </div>
               </div>
             )}
             {derivedMetrics.heatIndexC !== null && (
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">Feels Like</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">Feels Like</div>
                 <div>
-                  <span className="readout-value">{derivedMetrics.heatIndexC}</span>
-                  <span className="readout-unit">°C</span>
+                  <span className="text-2xl font-extrabold">{derivedMetrics.heatIndexC}</span>
+                  <span className="text-sm font-semibold text-ink-dim ml-1">°C</span>
                 </div>
               </div>
             )}
             {derivedMetrics.vpdKPa !== null && (
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">VPD</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">VPD</div>
                 <div>
-                  <span className="readout-value">{derivedMetrics.vpdKPa}</span>
-                  <span className="readout-unit">kPa</span>
+                  <span className="text-2xl font-extrabold">{derivedMetrics.vpdKPa}</span>
+                  <span className="text-sm font-semibold text-ink-dim ml-1">kPa</span>
                 </div>
               </div>
             )}
             {derivedMetrics.et0MmPerDay !== null && (
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">Evapotranspiration</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">Evapotranspiration</div>
                 <div>
-                  <span className="readout-value">{derivedMetrics.et0MmPerDay}</span>
-                  <span className="readout-unit">mm/day</span>
+                  <span className="text-2xl font-extrabold">{derivedMetrics.et0MmPerDay}</span>
+                  <span className="text-sm font-semibold text-ink-dim ml-1">mm/day</span>
                 </div>
               </div>
             )}
@@ -73,23 +71,15 @@ export default function InsightsPanel({ deviceId }: { deviceId: number }) {
         )}
 
         {advisories.length === 0 ? (
-          <p className="muted" style={{ margin: 0 }}>
-            No advisories right now.
-          </p>
+          <p className="text-ink-dim">No advisories right now.</p>
         ) : (
           advisories.map((a, i) => (
             <div
               key={i}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "flex-start",
-                padding: "10px 0",
-                borderTop: i > 0 ? "1px solid var(--hairline)" : "none",
-              }}
+              className={`flex gap-2.5 items-start py-2.5 ${i > 0 ? 'border-t border-gray-200' : ''}`}
             >
               <span>{a.severity === "warning" ? "⚠️" : "ℹ️"}</span>
-              <span style={{ fontSize: 13 }}>{a.message}</span>
+              <span className="text-sm">{a.message}</span>
             </div>
           ))
         )}
@@ -97,5 +87,3 @@ export default function InsightsPanel({ deviceId }: { deviceId: number }) {
     </div>
   );
 }
-
-

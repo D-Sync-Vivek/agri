@@ -25,7 +25,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "chat", label: "Chat" },
 ];
 
-/** "9h 20m ago" / "3m ago" / "just now" style relative time, matching the compact station-console look. */
 function formatRelativeTime(isoDate: string): string {
   const diffMs = Date.now() - new Date(isoDate).getTime();
   if (diffMs < 0) return "just now";
@@ -71,41 +70,34 @@ export default function Home() {
     return map;
   }, [readings]);
 
-  // "inactive" (never connected) and "offline" (stopped reporting) both
-  // just mean "not currently active" for the banner, but get slightly
-  // different copy so a brand-new device doesn't look like it "broke".
   const isNeverConnected = selectedDevice ? selectedDevice.status === "inactive" : false;
   const isOffline = selectedDevice ? selectedDevice.status === "offline" : false;
   const isActive = selectedDevice ? selectedDevice.status === "active" : false;
 
   if (devicesLoading) {
-    return <div className="loading-text">Loading console…</div>;
+    return <div className="text-center text-ink-dim py-12">Loading console…</div>;
   }
 
   if (devicesError) {
     return (
-      <div className="container">
-        <div className="error-banner" style={{ marginTop: 20 }}>
-          {devicesError}
-        </div>
+      <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{devicesError}</div>
       </div>
     );
   }
 
   if (!selectedDevice) {
     return (
-      <div className="container">
-        <div className="empty-state panel" style={{ marginTop: 24 }}>
-          <h3>No devices yet</h3>
+      <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200 shadow-card">
+          <h3 className="text-lg font-bold mb-2">No devices yet</h3>
           {isAdmin ? (
             <>
-              <p>Register a weather station device to start seeing live field conditions.</p>
-              <Link to="/devices" className="btn-ghost" style={{ display: "inline-block", marginTop: 12, textDecoration: "none" }}>
-                Go to Devices
-              </Link>
+              <p className="text-ink-dim">Register a weather station device to start seeing live field conditions.</p>
+              <Link to="/devices" className="inline-block mt-4 bg-brand-50 text-brand-700 font-semibold px-4 py-2 rounded-full hover:brightness-95 transition">Go to Devices</Link>
             </>
           ) : (
-            <p>No device has been assigned to your account yet. Ask your admin to grant you access to one.</p>
+            <p className="text-ink-dim">No device has been assigned to your account yet. Ask your admin to grant you access to one.</p>
           )}
         </div>
       </div>
@@ -113,90 +105,87 @@ export default function Home() {
   }
 
   return (
-    <div className="container">
-      <div className="page-header" style={{ marginTop: 16 }}>
-        <h1 className="page-title">Device {selectedDevice.id} Overview</h1>
+    <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-extrabold">Device {selectedDevice.id} Overview</h1>
         {updatedAt && (
-          <span className="muted" style={{ fontSize: 13 }}>
-            Updated {updatedAt.toLocaleTimeString(undefined, { hour12: false })}
-          </span>
+          <span className="text-sm text-ink-dim">Updated {updatedAt.toLocaleTimeString(undefined, { hour12: false })}</span>
         )}
       </div>
 
       {(isOffline || isNeverConnected) && (
-        <div className="offline-banner" style={{ alignItems: "center", padding: "12px 16px", margin: "12px 0 20px" }}>
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5">
           <WifiOffIcon size={18} />
-          <span style={{ fontSize: 14, fontWeight: 600 }}>
+          <span className="text-sm font-semibold">
             {isNeverConnected ? "Not yet connected" : "Inactive"}
             {selectedDevice.lastSeenAt && (
-              <>
-                {" "}
-                • Last seen {formatRelativeTime(selectedDevice.lastSeenAt)}
-              </>
+              <> • Last seen {formatRelativeTime(selectedDevice.lastSeenAt)}</>
             )}
           </span>
         </div>
       )}
 
-      <div className="panel" style={{ marginBottom: 20 }}>
-        <div className="panel-header">
-          <span className="panel-title">Field Information</span>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-5">
+        <div className="px-5 py-4 border-b border-gray-200">
+          <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">Field Information</span>
         </div>
-        <div className="panel-body">
-          <div className="info-grid">
+        <div className="p-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <div>
-              <div className="info-item-label">Device ID</div>
-              <div className="info-item-value">{selectedDevice.id}</div>
+              <div className="text-xs text-ink-dim">Device ID</div>
+              <div className="font-bold">{selectedDevice.id}</div>
             </div>
             <div>
-              <div className="info-item-label">Status</div>
-              <div className={`info-item-value ${isActive ? "status-ok" : isOffline ? "status-bad" : ""}`}>
+              <div className="text-xs text-ink-dim">Status</div>
+              <div className={`font-bold ${isActive ? 'text-brand-600' : isOffline ? 'text-red-600' : ''}`}>
                 {isActive ? "Online" : isOffline ? "Offline" : "Not yet connected"}
               </div>
             </div>
             <div>
-              <div className="info-item-label">Location</div>
-              <div className="info-item-value">{selectedDevice.locationName || "Not set"}</div>
+              <div className="text-xs text-ink-dim">Location</div>
+              <div className="font-bold">{selectedDevice.locationName || "Not set"}</div>
             </div>
             <div>
-              <div className="info-item-label">Last Online</div>
-              <div className="info-item-value">
-                {selectedDevice.lastSeenAt ? new Date(selectedDevice.lastSeenAt).toLocaleString() : "Never"}
-              </div>
+              <div className="text-xs text-ink-dim">Last Online</div>
+              <div className="font-bold">{selectedDevice.lastSeenAt ? new Date(selectedDevice.lastSeenAt).toLocaleString() : "Never"}</div>
             </div>
             <div>
-              <div className="info-item-label">Reporting Frequency</div>
-              <div className="info-item-value">Every {selectedDevice.frequency} min</div>
+              <div className="text-xs text-ink-dim">Reporting Frequency</div>
+              <div className="font-bold">Every {selectedDevice.frequency} min</div>
             </div>
             {selectedDevice.batteryLevel != null && (
               <div>
-                <div className="info-item-label">Battery</div>
-                <div className="info-item-value">
-                  {selectedDevice.batteryLevel.toFixed(0)}%{selectedDevice.isSolarCharging ? " ☀️ charging" : ""}
-                </div>
+                <div className="text-xs text-ink-dim">Battery</div>
+                <div className="font-bold">{selectedDevice.batteryLevel.toFixed(0)}%{selectedDevice.isSolarCharging ? " ☀️ charging" : ""}</div>
               </div>
             )}
             {selectedDevice.signalStrengthDbm != null && (
               <div>
-                <div className="info-item-label">Signal</div>
-                <div className="info-item-value">{selectedDevice.signalStrengthDbm} dBm</div>
+                <div className="text-xs text-ink-dim">Signal</div>
+                <div className="font-bold">{selectedDevice.signalStrengthDbm} dBm</div>
               </div>
             )}
             {selectedDevice.firmwareVersion && (
               <div>
-                <div className="info-item-label">Firmware</div>
-                <div className="info-item-value">{selectedDevice.firmwareVersion}</div>
+                <div className="text-xs text-ink-dim">Firmware</div>
+                <div className="font-bold">{selectedDevice.firmwareVersion}</div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
 
-      <div className="tab-row">
+      <div className="flex gap-1 mb-4 bg-brand-50 rounded-full p-1 overflow-x-auto">
         {TABS.map((t) => (
-          <button key={t.key} className={`tab-btn ${tab === t.key ? "active" : ""}`} onClick={() => setTab(t.key)}>
+          <button
+            key={t.key}
+            className={`flex-1 px-4 py-2 text-sm font-semibold rounded-full whitespace-nowrap transition ${
+              tab === t.key ? 'bg-brand-600 text-white' : 'text-brand-700 hover:bg-brand-100'
+            }`}
+            onClick={() => setTab(t.key)}
+          >
             {t.label}
           </button>
         ))}
@@ -205,71 +194,66 @@ export default function Home() {
       {tab === "conditions" && (
         <>
           {sensors.length === 0 && (
-            <p className="muted">
+            <p className="text-ink-dim mb-4">
               No sensors installed on this device yet.{" "}
               {isAdmin ? (
-                <Link to={`/devices/${selectedDevice.id}`} style={{ color: "var(--brand-green)", fontWeight: 600 }}>
-                  Install one
-                </Link>
+                <Link to={`/devices/${selectedDevice.id}`} className="text-brand-600 font-semibold">Install one</Link>
               ) : (
                 "Ask your admin to install one."
               )}
             </p>
           )}
 
-          <div className="readout-grid" style={{ paddingBottom: 32 }}>
-            {sensors
-              .filter((s) => s.isActive)
-              .map((sensor) => {
-                const reading = latestBySensor.get(sensor.id);
-                const meta = getMetricMeta(sensor.sensorLabel);
-                return (
-                  <Link
-                    to={`/devices/${selectedDevice.id}/sensors/${sensor.id}/history`}
-                    className="readout-tile"
-                    key={sensor.id}
-                    style={{ textDecoration: "none", color: "inherit", display: "block" }}
-                  >
-                    <div className="readout-icon">{meta.icon}</div>
-                    <div className="readout-label">{meta.name}</div>
-                    <div>
-                      {reading ? (
-                        meta.format ? (
-                          <span className="readout-value" style={{ fontSize: 20 }}>
-                            {formatMetricValue(sensor.sensorLabel, reading.value)}
-                          </span>
-                        ) : (
-                          <>
-                            <span className="readout-value">{reading.value.toFixed(1)}</span>
-                            <span className="readout-unit">{meta.unit}</span>
-                          </>
-                        )
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
+            {sensors.filter((s) => s.isActive).map((sensor) => {
+              const reading = latestBySensor.get(sensor.id);
+              const meta = getMetricMeta(sensor.sensorLabel);
+              return (
+                <Link
+                  to={`/devices/${selectedDevice.id}/sensors/${sensor.id}/history`}
+                  key={sensor.id}
+                  className="bg-white border border-gray-200 rounded-xl p-4 shadow-card hover:border-brand-500 hover:-translate-y-0.5 transition cursor-pointer"
+                >
+                  <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center text-brand-700 mb-3">
+                    {meta.icon}
+                  </div>
+                  <div className="text-sm text-ink-dim font-medium">{meta.name}</div>
+                  <div>
+                    {reading ? (
+                      meta.format ? (
+                        <span className="text-xl font-extrabold">{formatMetricValue(sensor.sensorLabel, reading.value)}</span>
                       ) : (
-                        <span className="readout-value">—</span>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
+                        <>
+                          <span className="text-2xl font-extrabold">{reading.value.toFixed(1)}</span>
+                          <span className="text-sm font-semibold text-ink-dim ml-1">{meta.unit}</span>
+                        </>
+                      )
+                    ) : (
+                      <span className="text-2xl font-extrabold">—</span>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </>
       )}
 
       {tab === "advisory" && (
-        <div style={{ paddingBottom: 32 }}>
+        <div className="pb-8">
           <CropSelector device={selectedDevice} />
           <AdvisoryPanel deviceId={selectedDevice.id} hasCrop={selectedDevice.cropId != null} />
         </div>
       )}
 
       {tab === "insights" && (
-        <div style={{ paddingBottom: 32 }}>
+        <div className="pb-8">
           <InsightsPanel deviceId={selectedDevice.id} />
         </div>
       )}
 
       {tab === "forecast" && (
-        <div style={{ paddingBottom: 32 }}>
+        <div className="pb-8">
           <ForecastPanel
             deviceId={selectedDevice.id}
             hasLocation={selectedDevice.latitude != null && selectedDevice.longitude != null}
@@ -278,14 +262,14 @@ export default function Home() {
       )}
 
       {tab === "analytics" && (
-        <div style={{ paddingBottom: 32 }}>
+        <div className="pb-8">
           <WindAnalyticsPanel deviceId={selectedDevice.id} />
           <RainAnalyticsPanel deviceId={selectedDevice.id} />
         </div>
       )}
 
       {tab === "chat" && (
-        <div style={{ paddingBottom: 32 }}>
+        <div className="pb-8">
           <ChatPanel deviceId={selectedDevice.id} />
         </div>
       )}

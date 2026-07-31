@@ -44,4 +44,3 @@ export function RiskGauge({ pct, level, size = 140 }: RiskGaugeProps) {
     </svg>
   );
 }
-

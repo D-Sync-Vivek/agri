@@ -6,6 +6,21 @@ export async function listSensorTypes(): Promise<SensorType[]> {
   return data.data;
 }
 
+export async function createSensorType(payload: {
+  name: string;
+  code: string;
+  unit?: string | null;
+  data_type?: string;
+  category?: string | null;
+  min_value?: number | null;
+  max_value?: number | null;
+}): Promise<SensorType> {
+  const { data } = await apiClient.post("/sensors/types", payload);
+  return data.data;
+}
+
+
+
 export async function listDeviceSensors(deviceId: number): Promise<DeviceSensor[]> {
   const { data } = await apiClient.get(`/sensors/device/${deviceId}`);
   return data.data;
@@ -39,3 +54,22 @@ export async function getRecentReadings(deviceId: number, limit = 50) {
 }
 
 
+export async function updateSensorType(
+  id: number, 
+  payload: {
+    name?: string;
+    code?: string;
+    unit?: string | null;
+    data_type?: string;
+    category?: string | null;
+    min_value?: number | null;
+    max_value?: number | null;
+  }
+): Promise<SensorType> {
+  const { data } = await apiClient.put(`/sensors/types/${id}`, payload);
+  return data.data;
+}
+
+export async function deleteSensorType(id: number): Promise<void> {
+  await apiClient.delete(`/sensors/types/${id}`);
+}

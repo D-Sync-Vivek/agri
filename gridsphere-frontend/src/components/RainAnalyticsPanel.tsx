@@ -11,7 +11,7 @@ const RANGE_TABS: { key: HistoryRange; label: string }[] = [
 
 export default function RainAnalyticsPanel({ deviceId }: { deviceId: number }) {
   const [range, setRange] = useState<HistoryRange>("weekly");
-  const [data, setData] = useState<RainAnalytics | null | undefined>(undefined); // undefined = loading, null = no rain sensor
+  const [data, setData] = useState<RainAnalytics | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,25 +21,22 @@ export default function RainAnalyticsPanel({ deviceId }: { deviceId: number }) {
       .catch((err) => setError(err?.response?.data?.detail || "Could not load rain analysis"));
   }, [deviceId, range]);
 
- const chartData = data?.cumulativeSeries?.map((d) => ({
-  date: new Date(d.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-  mm: d.mm,
-})) ?? [];
+  const chartData = data?.cumulativeSeries?.map((d) => ({
+    date: new Date(d.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+    mm: d.mm,
+  })) ?? [];
 
   return (
-    <div className="panel" style={{ marginBottom: 20 }}>
-      <div className="panel-header">
-        <span className="panel-title">Rain Analysis</span>
-        <div className="flex-row">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">Rain Analysis</span>
+        <div className="flex gap-1">
           {RANGE_TABS.map((t) => (
             <button
               key={t.key}
-              className="btn-ghost"
-              style={{
-                borderColor: range === t.key ? "var(--brand-green)" : undefined,
-                background: range === t.key ? "var(--brand-green)" : undefined,
-                color: range === t.key ? "#fff" : undefined,
-              }}
+              className={`px-3 py-1 text-xs font-semibold rounded-full transition ${
+                range === t.key ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700 hover:bg-brand-100'
+              }`}
               onClick={() => setRange(t.key)}
             >
               {t.label}
@@ -47,46 +44,44 @@ export default function RainAnalyticsPanel({ deviceId }: { deviceId: number }) {
           ))}
         </div>
       </div>
-      <div className="panel-body">
-        {error && <div className="error-banner">{error}</div>}
+      <div className="p-5">
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
 
-        {data === undefined && !error && <div className="loading-text">Loading…</div>}
+        {data === undefined && !error && <div className="text-center text-ink-dim py-6">Loading…</div>}
 
         {data === null && (
-          <p className="muted" style={{ margin: 0 }}>
-            No rainfall sensor installed on this device yet.
-          </p>
+          <p className="text-ink-dim">No rainfall sensor installed on this device yet.</p>
         )}
 
         {data && (
           <>
-            <div className="readout-grid" style={{ marginBottom: 18 }}>
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">Today</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">Today</div>
                 <div>
-                  <span className="readout-value">{data.todayMm ?? "—"}</span>
-                  <span className="readout-unit">mm</span>
+                  <span className="text-2xl font-extrabold">{data.todayMm ?? "—"}</span>
+                  <span className="text-sm font-semibold text-ink-dim ml-1">mm</span>
                 </div>
               </div>
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">This Week</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">This Week</div>
                 <div>
-                  <span className="readout-value">{data.weeklyMm ?? "—"}</span>
-                  <span className="readout-unit">mm</span>
+                  <span className="text-2xl font-extrabold">{data.weeklyMm ?? "—"}</span>
+                  <span className="text-sm font-semibold text-ink-dim ml-1">mm</span>
                 </div>
               </div>
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">This Month</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">This Month</div>
                 <div>
-                  <span className="readout-value">{data.monthlyMm ?? "—"}</span>
-                  <span className="readout-unit">mm</span>
+                  <span className="text-2xl font-extrabold">{data.monthlyMm ?? "—"}</span>
+                  <span className="text-sm font-semibold text-ink-dim ml-1">mm</span>
                 </div>
               </div>
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">Heaviest Reading</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">Heaviest Reading</div>
                 <div>
-                  <span className="readout-value">{data.maxIntensityMmPerHour ?? "—"}</span>
-                  <span className="readout-unit">mm</span>
+                  <span className="text-2xl font-extrabold">{data.maxIntensityMmPerHour ?? "—"}</span>
+                  <span className="text-sm font-semibold text-ink-dim ml-1">mm</span>
                 </div>
               </div>
             </div>
@@ -94,21 +89,19 @@ export default function RainAnalyticsPanel({ deviceId }: { deviceId: number }) {
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={chartData}>
-                  <CartesianGrid stroke="var(--hairline)" strokeDasharray="3 3" />
-                  <XAxis dataKey="date" stroke="var(--ink-dim)" fontSize={11} tick={{ fill: "var(--ink-dim)" }} />
-                  <YAxis stroke="var(--ink-dim)" fontSize={11} tick={{ fill: "var(--ink-dim)" }} unit="mm" />
+                  <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" />
+                  <XAxis dataKey="date" stroke="#6b7a73" fontSize={11} tick={{ fill: "#6b7a73" }} />
+                  <YAxis stroke="#6b7a73" fontSize={11} tick={{ fill: "#6b7a73" }} unit="mm" />
                   <Tooltip
-                    contentStyle={{ background: "var(--card)", border: "1px solid var(--hairline)", fontSize: 12 }}
-                    labelStyle={{ color: "var(--ink)" }}
+                    contentStyle={{ background: "#fff", border: "1px solid #e5e7eb", fontSize: 12 }}
+                    labelStyle={{ color: "#1a2421" }}
                     formatter={(value: number) => [`${value} mm`, "Rainfall"]}
                   />
                   <Bar dataKey="mm" fill="#2F86C9" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="muted" style={{ margin: 0 }}>
-                No rainfall recorded in this range yet.
-              </p>
+              <p className="text-ink-dim">No rainfall recorded in this range yet.</p>
             )}
           </>
         )}

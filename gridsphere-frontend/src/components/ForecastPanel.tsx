@@ -15,14 +15,12 @@ export default function ForecastPanel({ deviceId, hasLocation }: { deviceId: num
 
   if (!hasLocation) {
     return (
-      <div className="panel" style={{ marginBottom: 20 }}>
-        <div className="panel-header">
-          <span className="panel-title">7-Day Forecast</span>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-5">
+        <div className="px-5 py-4 border-b border-gray-200">
+          <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">7-Day Forecast</span>
         </div>
-        <div className="panel-body">
-          <p className="muted" style={{ margin: 0 }}>
-            Set a latitude/longitude on this device to see a forecast.
-          </p>
+        <div className="p-5">
+          <p className="text-ink-dim">Set a latitude/longitude on this device to see a forecast.</p>
         </div>
       </div>
     );
@@ -30,21 +28,19 @@ export default function ForecastPanel({ deviceId, hasLocation }: { deviceId: num
 
   if (error) {
     return (
-      <div className="panel" style={{ marginBottom: 20 }}>
-        <div className="panel-header">
-          <span className="panel-title">7-Day Forecast</span>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-5">
+        <div className="px-5 py-4 border-b border-gray-200">
+          <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">7-Day Forecast</span>
         </div>
-        <div className="panel-body">
-          <p className="muted" style={{ margin: 0 }}>
-            {error}
-          </p>
+        <div className="p-5">
+          <p className="text-ink-dim">{error}</p>
         </div>
       </div>
     );
   }
 
   if (!forecast) {
-    return <div className="loading-text">Loading forecast…</div>;
+    return <div className="text-center text-ink-dim py-6">Loading forecast…</div>;
   }
 
   const days = forecast.daily.time.map((date, i) => ({
@@ -55,35 +51,22 @@ export default function ForecastPanel({ deviceId, hasLocation }: { deviceId: num
   }));
 
   return (
-    <div className="panel" style={{ marginBottom: 20 }}>
-      <div className="panel-header">
-        <span className="panel-title">7-Day Forecast</span>
-        <span className="muted" style={{ fontSize: 11 }}>
-          via Open-Meteo
-        </span>
+    <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-5">
+      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">7-Day Forecast</span>
+        <span className="text-xs text-ink-dim">via Open-Meteo</span>
       </div>
-      <div className="panel-body" style={{ overflowX: "auto" }}>
-        <div style={{ display: "flex", gap: 12, minWidth: "max-content" }}>
+      <div className="p-5 overflow-x-auto">
+        <div className="flex gap-3 min-w-max">
           {days.map((d) => (
-            <div
-              key={d.date}
-              style={{
-                minWidth: 90,
-                textAlign: "center",
-                padding: "10px 8px",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--brand-green-light)",
-              }}
-            >
-              <div style={{ fontSize: 12, color: "var(--ink-dim)", marginBottom: 6 }}>
+            <div key={d.date} className="min-w-[90px] text-center p-2.5 rounded-lg bg-brand-50">
+              <div className="text-xs text-ink-dim mb-1.5">
                 {new Date(d.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}
               </div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>
+              <div className="font-bold text-sm">
                 {Math.round(d.max)}° / {Math.round(d.min)}°
               </div>
-              <div style={{ fontSize: 11, color: "var(--brand-green-dark)", marginTop: 4 }}>
-                💧 {Math.round(d.rainProb)}%
-              </div>
+              <div className="text-xs text-brand-700 mt-1">💧 {Math.round(d.rainProb)}%</div>
             </div>
           ))}
         </div>
@@ -91,5 +74,3 @@ export default function ForecastPanel({ deviceId, hasLocation }: { deviceId: num
     </div>
   );
 }
-
-

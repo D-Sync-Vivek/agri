@@ -16,29 +16,24 @@ export default function AppHeader() {
   const isAdmin = user?.role === "admin";
 
   return (
-    <header className="app-header">
-      <div className="app-header-inner">
-        <div className="app-header-left">
-          <div className="app-logo-badge">GS</div>
+    <header className="bg-brand-600 text-white py-4 px-6 w-full">
+      <div className="flex items-center justify-between w-full max-w-screen-2xl mx-auto">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-base shrink-0">
+            GS
+          </div>
           <div>
-            <div className="app-title">Grid Sphere</div>
+            <div className="font-bold text-lg leading-tight">Grid Sphere</div>
             {!isAdmin && (
-              <div style={{ position: "relative" }}>
-                <button className="device-switcher" onClick={() => setOpen((o) => !o)}>
+              <div className="relative">
+                <button
+                  className="text-white/85 text-sm flex items-center gap-1 hover:text-white transition"
+                  onClick={() => setOpen(!open)}
+                >
                   Device ID: {selectedDevice?.id ?? "—"} <span>▾</span>
                 </button>
                 {open && devices.length > 0 && (
-                  <div
-                    className="panel"
-                    style={{
-                      position: "absolute",
-                      top: 24,
-                      left: 0,
-                      minWidth: 200,
-                      zIndex: 30,
-                      color: "var(--ink)",
-                    }}
-                  >
+                  <div className="absolute top-6 left-0 min-w-50 z-30 bg-white rounded-lg shadow-card border border-gray-200 text-ink">
                     {devices.map((d) => (
                       <button
                         key={d.id}
@@ -46,19 +41,9 @@ export default function AppHeader() {
                           selectDevice(d.id);
                           setOpen(false);
                         }}
-                        style={{
-                          display: "block",
-                          width: "100%",
-                          textAlign: "left",
-                          background: "none",
-                          border: "none",
-                          padding: "10px 14px",
-                          cursor: "pointer",
-                          fontSize: 13,
-                          borderBottom: "1px solid var(--hairline)",
-                        }}
+                        className="block w-full text-left px-4 py-2.5 hover:bg-brand-50 text-sm border-b border-gray-100 last:border-0 transition"
                       >
-                        {d.deviceName || d.deviceUid} <span className="muted">#{d.id}</span>
+                        {d.deviceName || d.deviceUid} <span className="text-ink-dim">#{d.id}</span>
                       </button>
                     ))}
                   </div>
@@ -67,7 +52,7 @@ export default function AppHeader() {
             )}
           </div>
         </div>
-        <Link to="/profile" className="avatar-btn">
+        <Link to="/profile" className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
           <ProfileIcon size={18} />
         </Link>
       </div>

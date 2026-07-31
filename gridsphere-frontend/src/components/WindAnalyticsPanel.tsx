@@ -22,26 +22,20 @@ export default function WindAnalyticsPanel({ deviceId }: { deviceId: number }) {
       .finally(() => setIsLoading(false));
   }, [deviceId, range]);
 
-  // Check if we have any wind data
   const hasData = data && (data.windRose?.length > 0 || data.averageSpeedMs !== null);
-
-  // For wind rose: compute max count for scaling
   const maxCount = data?.windRose?.length ? Math.max(1, ...data.windRose.map((r) => r.count)) : 1;
 
   return (
-    <div className="panel" style={{ marginBottom: 20 }}>
-      <div className="panel-header">
-        <span className="panel-title">Wind Analytics</span>
-        <div className="flex-row">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-5">
+      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">Wind Analytics</span>
+        <div className="flex gap-1">
           {RANGE_TABS.map((t) => (
             <button
               key={t.key}
-              className="btn-ghost"
-              style={{
-                borderColor: range === t.key ? "var(--brand-green)" : undefined,
-                background: range === t.key ? "var(--brand-green)" : undefined,
-                color: range === t.key ? "#fff" : undefined,
-              }}
+              className={`px-3 py-1 text-xs font-semibold rounded-full transition ${
+                range === t.key ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700 hover:bg-brand-100'
+              }`}
               onClick={() => setRange(t.key)}
             >
               {t.label}
@@ -49,60 +43,49 @@ export default function WindAnalyticsPanel({ deviceId }: { deviceId: number }) {
           ))}
         </div>
       </div>
-      <div className="panel-body">
-        {error && <div className="error-banner">{error}</div>}
-        {isLoading && <div className="loading-text">Loading…</div>}
+      <div className="p-5">
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
+        {isLoading && <div className="text-center text-ink-dim py-6">Loading…</div>}
 
         {!isLoading && data && !hasData && (
-          <p className="muted" style={{ margin: 0 }}>
-            No wind_speed or wind_direction sensor data in this range yet.
-          </p>
+          <p className="text-ink-dim">No wind_speed or wind_direction sensor data in this range yet.</p>
         )}
 
         {!isLoading && hasData && (
           <>
-            <div className="readout-grid" style={{ marginBottom: 18 }}>
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">Average Speed</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">Average Speed</div>
                 <div>
-                  <span className="readout-value">{data.averageSpeedMs ?? "—"}</span>
-                  <span className="readout-unit">m/s</span>
+                  <span className="text-2xl font-extrabold">{data.averageSpeedMs ?? "—"}</span>
+                  <span className="text-sm font-semibold text-ink-dim ml-1">m/s</span>
                 </div>
               </div>
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">Gust (max)</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">Gust (max)</div>
                 <div>
-                  <span className="readout-value">{data.maxGustMs ?? "—"}</span>
-                  <span className="readout-unit">m/s</span>
+                  <span className="text-2xl font-extrabold">{data.maxGustMs ?? "—"}</span>
+                  <span className="text-sm font-semibold text-ink-dim ml-1">m/s</span>
                 </div>
               </div>
-              <div className="readout-tile" style={{ cursor: "default" }}>
-                <div className="readout-label">Dominant Direction</div>
-                <div>
-                  <span className="readout-value" style={{ fontSize: 20 }}>
-                    {data.dominantDirection ?? "—"}
-                  </span>
-                </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
+                <div className="text-sm text-ink-dim font-medium">Dominant Direction</div>
+                <div className="text-2xl font-extrabold">{data.dominantDirection ?? "—"}</div>
               </div>
             </div>
 
-            {/* Wind Rose Chart */}
             {data.windRose && data.windRose.length > 0 && (
               <>
-                <p className="section-title">Wind Rose</p>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 140 }}>
+                <p className="text-xs font-bold uppercase tracking-wider text-ink-dim mb-2">Wind Rose</p>
+                <div className="flex items-end gap-2 h-36">
                   {data.windRose.map((sector) => (
-                    <div key={sector.direction} style={{ flex: 1, textAlign: "center" }}>
+                    <div key={sector.direction} className="flex-1 text-center">
                       <div
-                        style={{
-                          height: `${Math.max(4, (sector.count / maxCount) * 100)}px`,
-                          background: sector.count > 0 ? "var(--brand-green)" : "var(--hairline)",
-                          borderRadius: 4,
-                          marginBottom: 6,
-                        }}
+                        className={`rounded-t-sm transition-all ${sector.count > 0 ? 'bg-brand-600' : 'bg-gray-200'}`}
+                        style={{ height: `${Math.max(4, (sector.count / maxCount) * 100)}px` }}
                       />
-                      <div style={{ fontSize: 11, color: "var(--ink-dim)", fontWeight: 600 }}>{sector.direction}</div>
-                      <div style={{ fontSize: 10, color: "var(--ink-dim)" }}>{sector.count}</div>
+                      <div className="text-xs font-semibold text-ink-dim mt-1.5">{sector.direction}</div>
+                      <div className="text-[10px] text-ink-dim">{sector.count}</div>
                     </div>
                   ))}
                 </div>

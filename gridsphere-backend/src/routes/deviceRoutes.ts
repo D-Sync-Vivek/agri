@@ -25,5 +25,6 @@ router.get("/:device_id/wind-analytics", requireAuth, requireRole("user", "admin
 router.get("/:device_id/rain-analytics", requireAuth, requireRole("user", "admin"), asyncHandler(deviceController.getRainAnalyticsHandler));
 router.post("/:device_id/chat", requireAuth, requireRole("user", "admin"), asyncHandler(chatController.sendChatMessage));
 router.get("/:device_id/chat", requireAuth, requireRole("user", "admin"), asyncHandler(chatController.getChatHistory));
+router.delete( "/:device_id/readings", requireAuth, requireRole("user", "admin"), asyncHandler(deviceController.deleteReadings));
 
 export default router;

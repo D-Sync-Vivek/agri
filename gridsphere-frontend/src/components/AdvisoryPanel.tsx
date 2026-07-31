@@ -9,17 +9,7 @@ const LEVEL_COLOR: Record<string, string> = {
   medium: "var(--amber)",
   high: "var(--red)",
 };
-
-// The backend only classifies risk as low/medium/high (see AiRisk type) -
-// it never emits a real probability. These are representative visual
-// bands, not measured percentages; kept conservative so we don't imply
-// false precision the model didn't actually generate.
-const LEVEL_PCT: Record<string, number> = {
-  low: 20,
-  medium: 55,
-  high: 85,
-};
-
+const LEVEL_PCT: Record<string, number> = { low: 20, medium: 55, high: 85 };
 const LEVEL_RANK: Record<string, number> = { low: 0, medium: 1, high: 2 };
 
 function overallRisk(risks: AiRisk[]): { level: "low" | "medium" | "high"; pct: number } {
@@ -44,19 +34,16 @@ export default function AdvisoryPanel({ deviceId, hasCrop }: { deviceId: number;
 
   useEffect(() => {
     if (hasCrop) load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceId, hasCrop]);
 
   if (!hasCrop) {
     return (
-      <div className="panel" style={{ marginBottom: 20 }}>
-        <div className="panel-header">
-          <span className="panel-title">AI Advisory</span>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-5">
+        <div className="px-5 py-4 border-b border-gray-200">
+          <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">AI Advisory</span>
         </div>
-        <div className="panel-body">
-          <p className="muted" style={{ margin: 0 }}>
-            Select a crop above to get an AI-generated advisory and pest/fungal risk assessment.
-          </p>
+        <div className="p-5">
+          <p className="text-ink-dim">Select a crop above to get an AI-generated advisory and pest/fungal risk assessment.</p>
         </div>
       </div>
     );
@@ -65,55 +52,34 @@ export default function AdvisoryPanel({ deviceId, hasCrop }: { deviceId: number;
   const overall = advisory ? overallRisk(advisory.risks) : null;
 
   return (
-    <div className="panel" style={{ marginBottom: 20 }}>
-      <div className="panel-header">
-        <span className="panel-title">AI Advisory</span>
-        <button className="btn-ghost" onClick={() => load(true)} disabled={isLoading}>
+    <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-5">
+      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">AI Advisory</span>
+        <button onClick={() => load(true)} disabled={isLoading} className="bg-brand-50 text-brand-700 font-semibold px-4 py-2 rounded-full text-sm hover:brightness-95 transition disabled:opacity-50">
           {isLoading ? "Thinking…" : "Refresh"}
         </button>
       </div>
-      <div className="panel-body">
-        {error && <div className="error-banner">{error}</div>}
-        {isLoading && !advisory && <div className="loading-text">Generating advisory…</div>}
+      <div className="p-5">
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
+        {isLoading && !advisory && <div className="text-center text-ink-dim py-6">Generating advisory…</div>}
 
         {advisory && overall && (
           <>
-            {/* Overall risk gauge - mirrors the "Fungal Infection / Overall Risk" card */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                padding: "20px 12px",
-                marginBottom: 16,
-              }}
-            >
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.4, color: "var(--ink-dim)", textTransform: "uppercase" }}>
-                Overall Risk
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2, marginBottom: 8 }}>{advisory.cropName} Pest &amp; Disease</div>
+            <div className="flex flex-col items-center py-4 mb-4">
+              <div className="text-xs font-bold uppercase tracking-wider text-ink-dim">Overall Risk</div>
+              <div className="text-sm font-bold mt-1 mb-2">{advisory.cropName} Pest &amp; Disease</div>
               <RiskGauge pct={overall.pct} level={overall.level} size={160} />
             </div>
 
-            <p style={{ fontSize: 14, marginBottom: 16 }}>{advisory.summary}</p>
+            <p className="text-sm mb-4">{advisory.summary}</p>
 
             {advisory.precautions.length > 0 && (
               <>
-                <p className="section-title">Precautions</p>
-                <ul style={{ listStyle: "none", margin: 0, padding: 0, marginBottom: 16 }}>
+                <p className="text-xs font-bold uppercase tracking-wider text-ink-dim mb-2">Precautions</p>
+                <ul className="list-none m-0 p-0 mb-4">
                   {advisory.precautions.map((p, i) => (
-                    <li
-                      key={i}
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 8,
-                        fontSize: 13,
-                        marginBottom: 8,
-                        color: "var(--ink)",
-                      }}
-                    >
-                      <span style={{ flexShrink: 0, marginTop: 1, color: "var(--brand-green-dark)" }}>{getPrecautionIcon(p)}</span>
+                    <li key={i} className="flex items-start gap-2 text-sm mb-2 text-ink">
+                      <span className="shrink-0 mt-0.5 text-brand-700">{getPrecautionIcon(p)}</span>
                       {p}
                     </li>
                   ))}
@@ -123,45 +89,30 @@ export default function AdvisoryPanel({ deviceId, hasCrop }: { deviceId: number;
 
             {advisory.risks.length > 0 && (
               <>
-                <p className="section-title">Specific Disease Risks</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-ink-dim mb-2">Specific Disease Risks</p>
                 {advisory.risks.map((r, i) => {
                   const pct = LEVEL_PCT[r.level];
                   const color = LEVEL_COLOR[r.level];
                   return (
-                    <div key={i} style={{ marginBottom: 14 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ color: "var(--ink-dim)" }}>{getDiseaseIcon(r.name)}</span>
-                          <span style={{ fontWeight: 600, fontSize: 13 }}>{r.name}</span>
+                    <div key={i} className="mb-4">
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-ink-dim">{getDiseaseIcon(r.name)}</span>
+                          <span className="font-semibold text-sm">{r.name}</span>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color, textTransform: "capitalize" }}>{r.level}</span>
+                        <span className="text-xs font-bold capitalize" style={{ color }}>{r.level}</span>
                       </div>
-                      <div
-                        style={{
-                          height: 6,
-                          borderRadius: 999,
-                          background: "var(--hairline, #eee)",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
-                          style={{
-                            height: "100%",
-                            width: `${pct}%`,
-                            background: color,
-                            borderRadius: 999,
-                            transition: "width 0.4s ease",
-                          }}
-                        />
+                      <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: color }} />
                       </div>
-                      <div style={{ fontSize: 11, color: "var(--ink-dim)", marginTop: 3 }}>{r.reason}</div>
+                      <div className="text-xs text-ink-dim mt-1">{r.reason}</div>
                     </div>
                   );
                 })}
               </>
             )}
 
-            <p className="muted" style={{ fontSize: 11, marginTop: 12, marginBottom: 0 }}>
+            <p className="text-xs text-ink-dim mt-3">
               Generated {new Date(advisory.generatedAt).toLocaleString()}
               {advisory.fromCache ? " (cached)" : ""} · AI-generated, not a substitute for agronomist advice.
             </p>
@@ -171,4 +122,3 @@ export default function AdvisoryPanel({ deviceId, hasCrop }: { deviceId: number;
     </div>
   );
 }
-

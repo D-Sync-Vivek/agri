@@ -30,7 +30,6 @@ export default function CropSelector({ device }: { device: Device }) {
     setIsSaving(true);
     setError(null);
     try {
-      // Toggle off if re-selecting the currently active crop.
       const currentCode = crops.find((c) => c.id === device.cropId)?.code;
       await setDeviceCrop(device.id, currentCode === cropCode ? null : cropCode);
       await refresh();
@@ -51,7 +50,6 @@ export default function CropSelector({ device }: { device: Device }) {
       setNewCropName("");
       setShowAddForm(false);
       loadCrops();
-      // Immediately select the crop the user just added on this device.
       await setDeviceCrop(device.id, crop.code);
       await refresh();
     } catch (err: any) {
@@ -62,48 +60,37 @@ export default function CropSelector({ device }: { device: Device }) {
   }
 
   return (
-    <div className="panel" style={{ marginBottom: 20 }}>
-      <div className="panel-header">
-        <span className="panel-title">Crop</span>
-        <button className="btn-ghost" onClick={() => setShowAddForm((v) => !v)}>
+    <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-5">
+      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">Crop</span>
+        <button onClick={() => setShowAddForm((v) => !v)} className="bg-brand-50 text-brand-700 font-semibold px-4 py-2 rounded-full text-sm hover:brightness-95 transition">
           {showAddForm ? "Cancel" : "+ Add crop"}
         </button>
       </div>
-      <div className="panel-body">
-        {error && <div className="error-banner">{error}</div>}
+      <div className="p-5">
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
 
         {showAddForm && (
-          <form onSubmit={handleAddCrop} className="flex-row" style={{ marginBottom: 14 }}>
+          <form onSubmit={handleAddCrop} className="flex items-center gap-2 mb-4">
             <input
               autoFocus
               placeholder="e.g. Grape, Tomato, Wheat"
               value={newCropName}
               onChange={(e) => setNewCropName(e.target.value)}
-              style={{
-                flex: 1,
-                background: "#fff",
-                border: "1px solid var(--hairline)",
-                borderRadius: "var(--radius-sm)",
-                padding: "9px 12px",
-                fontSize: 14,
-              }}
+              className="flex-1 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
             />
-            <button type="submit" className="btn-primary" style={{ width: "auto" }} disabled={isAdding}>
+            <button type="submit" disabled={isAdding} className="bg-brand-600 text-white font-bold px-4 py-2.5 rounded-lg hover:brightness-105 transition disabled:opacity-60">
               {isAdding ? "Adding…" : "Add"}
             </button>
           </form>
         )}
 
         {isLoadingCrops ? (
-          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            Loading crops…
-          </p>
+          <p className="text-ink-dim text-sm">Loading crops…</p>
         ) : crops.length === 0 ? (
-          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            No crops yet - add one above to get started.
-          </p>
+          <p className="text-ink-dim text-sm">No crops yet - add one above to get started.</p>
         ) : (
-          <div className="flex-row" style={{ flexWrap: "wrap", gap: 8 }}>
+          <div className="flex flex-wrap gap-2">
             {crops.map((crop) => {
               const isActive = device.cropId === crop.id;
               return (
@@ -111,8 +98,11 @@ export default function CropSelector({ device }: { device: Device }) {
                   key={crop.id}
                   onClick={() => handleSelect(crop.code)}
                   disabled={isSaving}
-                  className={isActive ? "btn-ghost" : "btn-secondary"}
-                  style={isActive ? { background: "var(--brand-green)", color: "#fff" } : undefined}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
+                    isActive
+                      ? 'bg-brand-600 text-white'
+                      : 'bg-transparent border border-gray-200 text-ink hover:border-brand-600'
+                  }`}
                 >
                   {crop.name}
                 </button>
@@ -122,13 +112,9 @@ export default function CropSelector({ device }: { device: Device }) {
         )}
 
         {!device.cropId && crops.length > 0 && (
-          <p className="muted" style={{ fontSize: 12, marginTop: 10, marginBottom: 0 }}>
-            Select a crop to unlock the AI advisory below.
-          </p>
+          <p className="text-xs text-ink-dim mt-2">Select a crop to unlock the AI advisory below.</p>
         )}
       </div>
     </div>
   );
 }
-
-

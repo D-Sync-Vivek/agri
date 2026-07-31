@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../config/prisma";
 import { ApiError } from "../utils/ApiError";
-import { SensorTypeCreateSchema, DeviceSensorCreateSchema, DeviceSensorUpdateSchema } from "../schemas/sensorSchema";
+import { SensorTypeCreateSchema, DeviceSensorCreateSchema, DeviceSensorUpdateSchema, SensorTypeUpdateSchema } from "../schemas/sensorSchema";
 import { deviceOwnershipWhere } from "../utils/deviceAccess";
 
 // ==========================================
@@ -127,4 +127,49 @@ export async function updateDeviceSensor(req: Request, res: Response): Promise<v
   });
 
   res.status(200).json({ status: "success", message: "Sensor updated successfully", data: updatedSensor });
+}
+
+// PUT /sensors/types/:id
+export async function updateSensorType(req: Request, res: Response): Promise<void> {
+  const id = parseInt(req.params.id, 10);
+  const updateData = SensorTypeUpdateSchema.parse(req.body);
+
+  const existing = await prisma.sensorType.findUnique({ where: { id } });
+  if (!existing) throw new ApiError(404, "Sensor type not found");
+
+  // If code is being changed, ensure it's unique
+  if (updateData.code && updateData.code !== existing.code) {
+    const duplicate = await prisma.sensorType.findUnique({ where: { code: updateData.code } });
+    if (duplicate) throw new ApiError(400, "Sensor type with this code already exists.");
+  }
+
+  const updated = await prisma.sensorType.update({
+    where: { id },
+    data: {
+      name: updateData.name,
+      code: updateData.code,
+      unit: updateData.unit,
+      dataType: updateData.data_type,
+      category: updateData.category,
+      minValue: updateData.min_value,
+      maxValue: updateData.max_value,
+    },
+  });
+
+  res.status(200).json({ status: "success", data: updated });
+}
+
+// DELETE /sensors/types/:id
+export async function deleteSensorType(req: Request, res: Response): Promise<void> {
+  const id = parseInt(req.params.id, 10);
+
+  const existing = await prisma.sensorType.findUnique({ where: { id } });
+  if (!existing) throw new ApiError(404, "Sensor type not found");
+
+  // Check if any device_sensor references this type
+  const inUse = await prisma.deviceSensor.findFirst({ where: { sensorTypeId: id } });
+  if (inUse) throw new ApiError(400, "Cannot delete sensor type that is currently installed on a device.");
+
+  await prisma.sensorType.delete({ where: { id } });
+  res.status(200).json({ status: "success", message: "Sensor type deleted" });
 }

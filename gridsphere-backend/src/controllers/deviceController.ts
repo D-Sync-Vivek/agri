@@ -10,6 +10,7 @@ import { withEffectiveStatus } from "../utils/deviceStatus";
 import { computeTodayEt0 } from "../services/etService";
 import { getWindAnalytics, getRainAnalytics } from "../services/windRainAnalyticsService";
 import { deviceOwnershipWhere } from "../utils/deviceAccess";
+import { z } from "zod";
 
 /**
  * POST /devices/
@@ -341,4 +342,69 @@ export async function getRainAnalyticsHandler(req: Request, res: Response): Prom
 
   const data = await getRainAnalytics(deviceId);
   res.status(200).json({ status: "success", data });
+}
+
+const DeleteReadingsQuerySchema = z.object({
+  from: z.string().datetime({ offset: true }).optional(),
+  to: z.string().datetime({ offset: true }).optional(),
+});
+
+/**
+ * DELETE /devices/:device_id/readings
+ * Deletes sensor readings for a device within a date/time range.
+ * If no range provided, deletes readings from the last 24 hours.
+ * Only accessible to users with access to the device (admins bypass).
+ */
+export async function deleteReadings(req: Request, res: Response): Promise<void> {
+  const userId = req.currentUser!.id;
+  const deviceId = parseInt(req.params.device_id, 10);
+
+  const device = await prisma.device.findFirst({
+    where: deviceOwnershipWhere(req, deviceId),
+  });
+  if (!device) {
+    throw new ApiError(404, "Device not found or unauthorized");
+  }
+
+  const query = DeleteReadingsQuerySchema.parse(req.query);
+  let from: Date, to: Date;
+
+  if (query.from && query.to) {
+    from = new Date(query.from);
+    to = new Date(query.to);
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+      throw new ApiError(400, "Invalid date format. Use ISO 8601 datetime strings.");
+    }
+    if (from > to) {
+      throw new ApiError(400, "from date must be before to date");
+    }
+  } else {
+    // Default: last 24 hours
+    to = new Date();
+    from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
+  }
+
+  // Get all device sensor ids for this device
+  const sensors = await prisma.deviceSensor.findMany({
+    where: { deviceId },
+    select: { id: true },
+  });
+  const sensorIds = sensors.map((s) => s.id);
+
+  if (sensorIds.length === 0) {
+    res.status(200).json({ status: "success", message: "No sensors on this device, nothing deleted." });
+    return;
+  }
+
+  const deleted = await prisma.sensorReading.deleteMany({
+    where: {
+      deviceSensorId: { in: sensorIds },
+      recordedAt: { gte: from, lte: to },
+    },
+  });
+
+  res.status(200).json({
+    status: "success",
+    message: `Deleted ${deleted.count} readings within the specified range.`,
+  });
 }

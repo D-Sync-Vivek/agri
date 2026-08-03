@@ -1,8 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../config/prisma";
-import { ApiError } from "../utils/ApiError";
 import * as readingRepository from "../services/readingRepository";
-import { deviceOwnershipWhere } from "../utils/deviceAccess";
 
 function toFloatOrUndefined(v: unknown): number | undefined {
   if (v === undefined || v === null || v === "") return undefined;
@@ -23,32 +21,22 @@ const NON_SENSOR_QUERY_KEYS = new Set([
   "battery_pct",        // new
   "ota",                // new
 ]);
-
 /**
  * GET /readings/add
  * Equivalent of app/routers/reading_router.py -> add_reading
  * IoT devices hit this via GET to log data; translates hardware payload
  * into the EAV-style sensor_readings table via active device_sensors.
  *
- * Fully dynamic: any query param whose (lowercased) key matches an
- * installed device_sensor's label gets stored as a reading for that
- * sensor - no hardcoded metric list. Adding a new sensor is just
- * `POST /sensors/device` with a new label; this endpoint picks it up
- * automatically.
- *
- * Device-health telemetry (battery, is_solar_charging,
- * signal_strength_dbm, firmware_version) is handled separately since it
- * describes the device itself, not a field condition, and updates the
- * Device row directly rather than being stored as a sensor reading.
- *
- * Every successful ingestion also marks the device "active" and stamps
- * lastSeenAt, so "Device Online/Offline" and "Last Sync Time" actually
- * reflect reality.
+ * Response is now JSON instead of plain text, so the device knows:
+ *  - successful: whether the ingestion worked
+ *  - frequency:  the reporting interval (minutes) currently configured
+ *                for this device, so firmware can pick it up and adjust
+ *                itself if someone changed it from the dashboard.
  */
 export async function addReading(req: Request, res: Response): Promise<void> {
   const dIdParam = req.query.d_id as string | undefined;
   if (!dIdParam) {
-    res.status(400).type("text/plain").send("Missing d_id");
+    res.status(400).json({ successful: false, message: "Missing d_id" });
     return;
   }
 
@@ -57,7 +45,7 @@ export async function addReading(req: Request, res: Response): Promise<void> {
   // shown as "UID" in the admin fleet table.
   const device = await prisma.device.findUnique({ where: { deviceUid: dIdParam } });
   if (!device) {
-    res.status(404).type("text/plain").send("Unknown device");
+    res.status(404).json({ successful: false, message: "Unknown device" });
     return;
   }
   const dId = device.id;
@@ -123,60 +111,37 @@ export async function addReading(req: Request, res: Response): Promise<void> {
   }
 
   const deviceUpdate: Record<string, unknown> = {
-  status: "active",
-  lastSeenAt: parsedTime,
-};
+    status: "active",
+    lastSeenAt: parsedTime,
+  };
 
+  if (batteryPct !== undefined) {
+    deviceUpdate.batteryLevel = batteryPct;
+  } else if (batteryLevel !== undefined) { // batteryLevel comes from the old "battery" param
+    deviceUpdate.batteryLevel = batteryLevel;
+  }
 
-if (batteryPct !== undefined) {
-  deviceUpdate.batteryLevel = batteryPct;
-} else if (batteryLevel !== undefined) {  // batteryLevel comes from the old "battery" param
-  deviceUpdate.batteryLevel = batteryLevel;
-}
+  if (batteryVoltage !== undefined) {
+    deviceUpdate.batteryVoltage = batteryVoltage;
+  }
 
-if (batteryVoltage !== undefined) {
-  deviceUpdate.batteryVoltage = batteryVoltage;
-}
+  if (signalStrengthDbm !== undefined) {
+    deviceUpdate.signalStrengthDbm = Math.round(signalStrengthDbm);
+  }
 
-if (signalStrengthDbm !== undefined) {
-  deviceUpdate.signalStrengthDbm = Math.round(signalStrengthDbm);
-}
+  if (otaVersion !== undefined) {
+    deviceUpdate.firmwareVersion = otaVersion;
+  }
 
-if (otaVersion !== undefined) {
-  deviceUpdate.firmwareVersion = otaVersion;
-}
-
-if (isSolarCharging !== undefined) {
-  deviceUpdate.isSolarCharging = isSolarCharging;
-}
+  if (isSolarCharging !== undefined) {
+    deviceUpdate.isSolarCharging = isSolarCharging;
+  }
 
   await prisma.device.updateMany({ where: { id: dId }, data: deviceUpdate });
 
-  res.status(200).type("text/plain").send("Readings added successfully");
-}
-
-/**
- * GET /readings/:d_id/history
- * Equivalent of app/routers/reading_router.py -> get_device_history
- */
-export async function getDeviceHistory(req: Request, res: Response): Promise<void> {
-  const dId = parseInt(req.params.d_id, 10);
-  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
-  const userId = req.currentUser!.id;
-
-  const device = await prisma.device.findFirst({
-    where: deviceOwnershipWhere(req, dId),
-  });
-
-  if (!device) {
-    throw new ApiError(404, "Device not found or not authorized");
-  }
-
-  const readings = await prisma.sensorReading.findMany({
-    where: { deviceSensor: { deviceId: dId } },
-    orderBy: { recordedAt: "desc" },
-    take: limit,
-  });
-
-  res.status(200).json({ status: "success", data: readings });
+  // device.frequency is whatever's currently set for this device (via the
+  // dashboard/admin update-device flow) - not necessarily what the
+  // firmware itself is using yet, so returning it here lets the device
+  // sync up to the latest configured value on every ingest call.
+  res.status(200).json({ successful: true, frequency: device.frequency });
 }

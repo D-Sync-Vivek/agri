@@ -19,11 +19,12 @@ export default function AppHeader() {
     <header className="bg-brand-600 text-white py-4 px-6 w-full">
       <div className="flex items-center justify-between w-full max-w-screen-2xl mx-auto">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-base shrink-0">
-            GS
-          </div>
+          <img
+            src="/logo1.png"
+            alt="GridSphere"
+            className="h-8 w-auto sm:h-10 shrink-0 object-contain"
+          />
           <div>
-            <div className="font-bold text-lg leading-tight">Grid Sphere</div>
             {!isAdmin && (
               <div className="relative">
                 <button

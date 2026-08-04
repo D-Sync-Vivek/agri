@@ -520,20 +520,6 @@ const applyCustomRange = () => {
                     {device.lastSeenAt ? new Date(device.lastSeenAt).toLocaleString() : "Never"}
                   </div>
                 </div>
-                {device.batteryLevel != null && (
-                  <div>
-                    <div className="text-xs text-ink-dim">Battery</div>
-                    <div className="font-bold">
-                      {device.batteryLevel.toFixed(0)}%{device.isSolarCharging ? " ☀️ charging" : ""}
-                    </div>
-                  </div>
-                )}
-                {device.batteryVoltage != null && (
-                  <div>
-                    <div className="text-xs text-ink-dim">Battery Voltage</div>
-                    <div className="font-bold">{device.batteryVoltage.toFixed(2)} V</div>
-                  </div>
-                )}
                 {device.signalStrengthDbm != null && (
                   <div>
                     <div className="text-xs text-ink-dim">Signal</div>

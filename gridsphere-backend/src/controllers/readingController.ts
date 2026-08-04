@@ -17,9 +17,7 @@ const NON_SENSOR_QUERY_KEYS = new Set([
   "timestamp",
   "is_solar_charging",
   "signal_strength_dbm",
-  "battery_v",          // new
-  "battery_pct",        // new
-  "ota",                // new
+  "ota",
 ]);
 /**
  * GET /readings/add

@@ -548,7 +548,7 @@ const applyCustomRange = () => {
 
       {tab === "history" && (
         <>
-          <div className="flex flex-wrap items-center gap-3 mb-4 p-4 bg-white rounded-xl border border-gray-200 shadow-card">
+          <div className="flex flex-col gap-3 mb-4 p-4 bg-white rounded-xl border border-gray-200 shadow-card">
             <div className="flex gap-1 flex-wrap">
               {(["daily", "weekly", "monthly"] as HistoryRange[]).map((r) => (
                 <button
@@ -568,37 +568,41 @@ const applyCustomRange = () => {
               ))}
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <label className="text-xs text-ink-dim">From:</label>
-              <input
-                type="datetime-local"
-                value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-brand-600"
-              />
-              <label className="text-xs text-ink-dim">To:</label>
-              <input
-                type="datetime-local"
-                value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-brand-600"
-              />
-              <button
-                onClick={applyCustomRange}
-                className="bg-brand-600 text-white font-semibold px-4 py-1.5 rounded-lg hover:brightness-105 transition"
-              >
-                Apply
-              </button>
-              {isCustomRange && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-wrap">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
+                <label className="text-xs text-ink-dim shrink-0">From:</label>
+                <input
+                  type="datetime-local"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="w-full sm:w-auto min-w-0 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-brand-600"
+                />
+                <label className="text-xs text-ink-dim shrink-0">To:</label>
+                <input
+                  type="datetime-local"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="w-full sm:w-auto min-w-0 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-brand-600"
+                />
+              </div>
+              <div className="flex gap-2">
                 <button
-                  onClick={clearCustomRange}
-                  className="bg-gray-200 text-ink-dim font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-300 transition"
+                  onClick={applyCustomRange}
+                  className="bg-brand-600 text-white font-semibold px-4 py-1.5 rounded-lg hover:brightness-105 transition"
                 >
-                  Clear
+                  Apply
                 </button>
-              )}
+                {isCustomRange && (
+                  <button
+                    onClick={clearCustomRange}
+                    className="bg-gray-200 text-ink-dim font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-300 transition"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="ml-auto flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={openDeleteModal}
                 className="bg-red-50 text-red-600 font-semibold px-4 py-2 rounded-lg hover:bg-red-100 transition"
@@ -640,7 +644,7 @@ const applyCustomRange = () => {
                 {sensors.filter((s) => s.isActive).length === 0 ? (
                   <p className="text-ink-dim">No active sensors on this device.</p>
                 ) : (
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
                     {sensors.filter((s) => s.isActive).map((sensor) => {
                       const reading = latestBySensor.get(sensor.id);
                       const meta = getMetricMeta(sensor.sensorLabel);

@@ -145,3 +145,66 @@ export async function addReading(req: Request, res: Response): Promise<void> {
   // sync up to the latest configured value on every ingest call.
   res.status(200).json({ successful: true, frequency: device.frequency });
 }
+
+/**
+ * Unlike addReading, :d_id here is a route param (not a query string), and
+ * per readingRoutes.ts this endpoint is authenticated, so it also enforces
+ * device ownership (admins can view any device, regular users only their
+ * own - see deviceOwnershipWhere). Filtering mirrors
+ * deviceController.getDeviceHistory: daily = since local midnight,
+ * weekly = rolling 7 days, monthly = current calendar month, custom =
+ * explicit from/to.
+ */
+export async function getDeviceHistory(req: Request, res: Response): Promise<void> {
+  const dIdParam = req.params.d_id;
+  const range = (req.query.range as string) || "weekly";
+  const fromDate = req.query.from as string | undefined;
+  const toDate = req.query.to as string | undefined;
+
+  // d_id may be either the device's public UID or its numeric id,
+  // depending on the caller - support both.
+  const numericId = parseInt(dIdParam, 10);
+  const device = await prisma.device.findFirst({
+    where: !isNaN(numericId) && String(numericId) === dIdParam
+      ? deviceOwnershipWhere(req, numericId)
+      : { deviceUid: dIdParam },
+  });
+
+  if (!device) {
+    throw new ApiError(404, "Device not found or unauthorized");
+  }
+
+  // If we matched by UID above, still confirm ownership against the
+  // resolved numeric id.
+  const owned = await prisma.device.findFirst({ where: deviceOwnershipWhere(req, device.id) });
+  if (!owned) {
+    throw new ApiError(404, "Device not found or unauthorized");
+  }
+
+  const now = new Date();
+  const where: Record<string, unknown> = { deviceSensor: { deviceId: device.id } };
+
+  if (range === "daily") {
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    where.recordedAt = { gte: startOfDay };
+  } else if (range === "weekly") {
+    where.recordedAt = { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) };
+  } else if (range === "monthly") {
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    where.recordedAt = { gte: startOfMonth };
+  } else if (range === "custom" && fromDate && toDate) {
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new ApiError(400, "Invalid date format. Use ISO 8601.");
+    }
+    where.recordedAt = { gte: start, lte: end };
+  }
+
+  const readings = await prisma.sensorReading.findMany({
+    where,
+    orderBy: { recordedAt: "desc" },
+  });
+
+  res.status(200).json({ status: true, data: readings });
+}

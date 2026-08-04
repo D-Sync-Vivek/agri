@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import prisma from "../config/prisma";
 import * as readingRepository from "../services/readingRepository";
+import { ApiError } from "../utils/ApiError";
+import { deviceOwnershipWhere } from "../utils/deviceAccess";
 
 function toFloatOrUndefined(v: unknown): number | undefined {
   if (v === undefined || v === null || v === "") return undefined;

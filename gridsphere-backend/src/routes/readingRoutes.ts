@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as readingController from "../controllers/readingController";
+import * as deviceController from "../controllers/deviceController"
 import { requireAuth } from "../middleware/auth";
 import { requireRole } from "../middleware/rbac";
 import { asyncHandler } from "../middleware/errorHandler";
@@ -10,6 +11,6 @@ const router = Router();
 // NOTE: /add is intentionally public (no auth) - matches the original,
 // since IoT devices call it directly without a user JWT.
 router.get("/add", asyncHandler(readingController.addReading));
-router.get("/:d_id/history", requireAuth, requireRole("user", "admin"), asyncHandler(readingController.getDeviceHistory));
+router.get("/:d_id/history", requireAuth, requireRole("user", "admin"), asyncHandler(deviceController.getDeviceHistory));
 
 export default router;

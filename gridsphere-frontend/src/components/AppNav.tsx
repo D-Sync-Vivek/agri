@@ -24,14 +24,7 @@ export default function AppNav() {
       aria-label="Main navigation"
       className="hidden md:flex fixed left-0 top-0 h-full w-22 flex-col items-center py-8 z-50 bg-brand-600 text-white shadow-sm overflow-y-auto"
     >
-      <div className="mb-6 flex flex-col items-center">
-        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center mb-2">
-          <span className="text-brand-600 font-black text-sm">GS</span>
-        </div>
-        <span className="text-[10px] font-bold text-white text-center leading-tight">
-          GRIDSPHERE
-        </span>
-      </div>
+      <img src="/favicon.svg" alt="logo" className="w-10 mb-4" />
 
       <div className="flex flex-col gap-4 w-full px-2">
         {!isAdmin ? (

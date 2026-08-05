@@ -1,7 +1,7 @@
 const LEVEL_COLOR: Record<string, string> = {
-  low: "var(--brand-green-dark)",
-  medium: "var(--amber)",
-  high: "var(--red)",
+  low: "#339e5d",   // brand-500
+  medium: "#e0932e", // amber
+  high: "#d64545",   // red
 };
 
 interface RiskGaugeProps {
@@ -21,7 +21,7 @@ export function RiskGauge({ pct, level, size = 140 }: RiskGaugeProps) {
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${clamped} percent, ${level} risk`}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--border, #eee)" strokeWidth={strokeWidth} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} />
       <circle
         cx={cx}
         cy={cy}
@@ -35,10 +35,10 @@ export function RiskGauge({ pct, level, size = 140 }: RiskGaugeProps) {
         transform={`rotate(-90 ${cx} ${cy})`}
         style={{ transition: "stroke-dashoffset 0.5s ease" }}
       />
-      <text x={cx} y={cy - 4} textAnchor="middle" fontSize={size * 0.2} fontWeight={700} fill="var(--ink)">
+      <text x={cx} y={cy - 4} textAnchor="middle" fontSize={size * 0.2} fontWeight={700} fill="#103621">
         {clamped}%
       </text>
-      <text x={cx} y={cy + 16} textAnchor="middle" fontSize={size * 0.08} fill="var(--ink-dim)" style={{ textTransform: "capitalize" }}>
+      <text x={cx} y={cy + 16} textAnchor="middle" fontSize={size * 0.08} fill="#5b7568" style={{ textTransform: "capitalize" }}>
         {level} risk
       </text>
     </svg>

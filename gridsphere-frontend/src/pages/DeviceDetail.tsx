@@ -35,6 +35,21 @@ type Tab = "info" | "history" | "sensors" | "access";
 
 const LINE_COLORS = ["#1F6E44", "#E0932E", "#2F86C9", "#D64545", "#9b7fc7"];
 
+// Basic status classification for the redesigned sensor cards.
+// Purely presentational — doesn't affect data or alerts logic.
+function getReadingStatus(sensorLabel: string, value: number): { label: string; className: string } {
+  const label = sensorLabel.toLowerCase();
+  const optimal = { label: "Optimal", className: "bg-brand-50 text-brand-700" };
+  const warning = { label: "Warning", className: "bg-amber-100 text-amber-800" };
+  const stable = { label: "Stable", className: "bg-gray-100 text-ink-dim" };
+
+  if (label.includes("humidity") && (value < 30 || value > 80)) return warning;
+  if (label.includes("leaf_wetness") && value > 60) return warning;
+  if (label.includes("soil_moisture") && (value < 15 || value > 70)) return warning;
+  if (["wind_direction", "atmospheric_pressure"].some((k) => label.includes(k))) return stable;
+  return optimal;
+}
+
 // Utility to format backend error detail (Zod arrays, strings, etc.)
 function formatErrorDetail(detail: any): string {
   if (typeof detail === "string") return detail;
@@ -632,6 +647,36 @@ const applyCustomRange = () => {
             </div>
           </div>
 
+          {/* Device Vitals Banner */}
+          <div
+            className="w-full rounded-xl text-white flex flex-wrap gap-8 items-center px-8 py-6 mb-6 shadow-card"
+            style={{ background: "linear-gradient(135deg, #16A34A 0%, #15803D 100%)" }}
+          >
+            <div>
+              <div className="text-xs uppercase tracking-wider opacity-80 mb-1">Status</div>
+              <div className="font-bold text-lg capitalize">{device.status}</div>
+            </div>
+            <div className="w-px h-10 bg-white/20 hidden sm:block" />
+            <div>
+              <div className="text-xs uppercase tracking-wider opacity-80 mb-1">Location</div>
+              <div className="font-bold text-lg">{device.locationName || "—"}</div>
+            </div>
+            <div className="w-px h-10 bg-white/20 hidden sm:block" />
+            <div>
+              <div className="text-xs uppercase tracking-wider opacity-80 mb-1">Reporting</div>
+              <div className="font-bold text-lg">Every {device.frequency} min</div>
+            </div>
+            <div className="w-px h-10 bg-white/20 hidden sm:block" />
+            <div>
+              <div className="text-xs uppercase tracking-wider opacity-80 mb-1">Last Seen</div>
+              <div className="font-bold text-lg">
+                {device.lastSeenAt
+                  ? new Date(device.lastSeenAt).toLocaleTimeString(undefined, { hour12: false })
+                  : "Never"}
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
             <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
@@ -644,23 +689,31 @@ const applyCustomRange = () => {
                 {sensors.filter((s) => s.isActive).length === 0 ? (
                   <p className="text-ink-dim">No active sensors on this device.</p>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {sensors.filter((s) => s.isActive).map((sensor) => {
                       const reading = latestBySensor.get(sensor.id);
                       const meta = getMetricMeta(sensor.sensorLabel);
+                      const status = reading ? getReadingStatus(sensor.sensorLabel, reading.value) : null;
                       return (
-                        <div key={sensor.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-card">
-                          <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center text-brand-700 mb-3">
-                            {meta.icon}
+                        <div key={sensor.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-card flex flex-col justify-between">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center text-brand-700">
+                              {meta.icon}
+                            </div>
+                            {status && (
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${status.className}`}>
+                                {status.label}
+                              </span>
+                            )}
                           </div>
-                          <div className="text-sm text-ink-dim font-medium">{meta.name}</div>
+                          <div className="text-sm text-ink-dim font-medium mb-1">{meta.name}</div>
                           <div>
                             {reading ? (
                               meta.format ? (
                                 <span className="text-xl font-extrabold">{formatMetricValue(sensor.sensorLabel, reading.value)}</span>
                               ) : (
                                 <>
-                                  <span className="text-2xl font-extrabold">{reading.value.toFixed(2)}</span>
+                                  <span className="text-2xl font-extrabold">{reading.value.toFixed(1)}</span>
                                   <span className="text-sm font-semibold text-ink-dim ml-1">{meta.unit}</span>
                                 </>
                               )

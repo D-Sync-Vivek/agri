@@ -5,12 +5,20 @@ import { RiskGauge } from "./RiskGuage";
 import { getDiseaseIcon, getPrecautionIcon } from "./RiskIcons";
 
 const LEVEL_COLOR: Record<string, string> = {
-  low: "var(--brand-green-dark)",
-  medium: "var(--amber)",
-  high: "var(--red)",
+  low: "#339e5d",
+  medium: "#e0932e",
+  high: "#d64545",
 };
+
 const LEVEL_PCT: Record<string, number> = { low: 20, medium: 55, high: 85 };
 const LEVEL_RANK: Record<string, number> = { low: 0, medium: 1, high: 2 };
+
+// Map level to Tailwind text color class
+const LEVEL_TEXT_CLASS: Record<string, string> = {
+  low: "text-green-600",
+  medium: "text-yellow-600",
+  high: "text-red-600",
+};
 
 function overallRisk(risks: AiRisk[]): { level: "low" | "medium" | "high"; pct: number } {
   if (risks.length === 0) return { level: "low", pct: 0 };
@@ -93,6 +101,7 @@ export default function AdvisoryPanel({ deviceId, hasCrop }: { deviceId: number;
                 {advisory.risks.map((r, i) => {
                   const pct = LEVEL_PCT[r.level];
                   const color = LEVEL_COLOR[r.level];
+                  const textClass = LEVEL_TEXT_CLASS[r.level];
                   return (
                     <div key={i} className="mb-4">
                       <div className="flex justify-between items-center mb-1">
@@ -100,7 +109,7 @@ export default function AdvisoryPanel({ deviceId, hasCrop }: { deviceId: number;
                           <span className="text-ink-dim">{getDiseaseIcon(r.name)}</span>
                           <span className="font-semibold text-sm">{r.name}</span>
                         </div>
-                        <span className="text-xs font-bold capitalize" style={{ color }}>{r.level}</span>
+                        <span className={`text-xs font-bold capitalize ${textClass}`}>{r.level}</span>
                       </div>
                       <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: color }} />

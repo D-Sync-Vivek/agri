@@ -66,10 +66,6 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
                 <BarChart3 size={20} />
                 Insights
               </NavLink>
-              <NavLink to="/forecast" className={linkClass} onClick={onClose}>
-                <Cloud size={20} />
-                Forecast
-              </NavLink>
               <NavLink to="/analytics" className={linkClass} onClick={onClose}>
                 <LineChart size={20} />
                 Analytics

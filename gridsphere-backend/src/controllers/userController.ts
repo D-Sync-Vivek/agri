@@ -15,7 +15,12 @@ import { ApiError } from "../utils/ApiError";
 export async function getUser(req: Request, res: Response): Promise<void> {
   const userId = req.currentUser!.id;
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      _count: { select: { deviceAssociations: true } },
+    },
+  });
   if (!user) {
     throw new ApiError(404, "User not found");
   }
@@ -30,6 +35,8 @@ export async function getUser(req: Request, res: Response): Promise<void> {
       company_name: user.companyName,
       role: user.role,
       is_active: user.isActive,
+      deviceCount: user._count.deviceAssociations,
+      createdAt: user.createdAt,
     },
   });
 }

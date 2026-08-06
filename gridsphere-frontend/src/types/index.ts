@@ -6,6 +6,8 @@ export interface User {
   company_name?: string | null;
   role: string;
   is_active?: boolean;
+  deviceCount?: number; 
+  createdAt?: string;    
 }
 
 export interface AuthResponse {

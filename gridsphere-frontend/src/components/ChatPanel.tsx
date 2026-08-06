@@ -71,43 +71,60 @@ export default function ChatPanel({ deviceId }: { deviceId: number }) {
   const suggestions = ["Should I irrigate today?", "Will it rain soon?", "Is today good for spraying?"];
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-200">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden h-full flex flex-col">
+      <div className="px-5 py-4 border-b border-gray-200 shrink-0">
         <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">Ask GridSphere</span>
       </div>
-      <div className="p-5">
-        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
+
+      <div className="p-5 flex-1 flex flex-col overflow-hidden min-h-0">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4 shrink-0">
+            {error}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="text-center text-ink-dim py-6">Loading conversation…</div>
         ) : (
-          <div className="chat-scroll">
+          <div
+            ref={scrollRef}
+            className="chat-scroll flex-1 overflow-y-auto space-y-2.5 pr-1"
+          >
             {messages.length === 0 && (
               <p className="text-ink-dim text-sm text-center py-3">
                 Ask anything about this device's current conditions - irrigation, spraying, forecast, whatever's on
                 your mind.
               </p>
             )}
-            {messages.filter((m) => m && m.role).map((m) => (
-              <div key={m.id} className={`chat-bubble ${m.role}`}>
-                {m.content}
-              </div>
-            ))}
+            {messages
+              .filter((m) => m && m.role)
+              .map((m) => (
+                <div key={m.id} className={`chat-bubble ${m.role}`}>
+                  {m.content}
+                </div>
+              ))}
             {isSending && <div className="chat-bubble assistant">Thinking…</div>}
           </div>
         )}
 
         {messages.length === 0 && !isLoading && (
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex flex-wrap gap-2 mt-3 shrink-0">
             {suggestions.map((s) => (
-              <button key={s} className="bg-brand-50 text-brand-700 font-semibold px-4 py-2 rounded-full text-sm hover:brightness-95 transition" onClick={() => setInput(s)}>
+              <button
+                key={s}
+                className="bg-brand-50 text-brand-700 font-semibold px-4 py-2 rounded-full text-sm hover:brightness-95 transition"
+                onClick={() => setInput(s)}
+              >
                 {s}
               </button>
             ))}
           </div>
         )}
 
-        <form onSubmit={handleSend} className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
+        <form
+          onSubmit={handleSend}
+          className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 shrink-0"
+        >
           <input
             placeholder="Ask a question…"
             value={input}
@@ -116,7 +133,11 @@ export default function ChatPanel({ deviceId }: { deviceId: number }) {
             maxLength={2000}
             className="flex-1 bg-white border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
           />
-          <button type="submit" disabled={isSending || !input.trim()} className="bg-brand-600 text-white font-bold px-5 py-2.5 rounded-full hover:brightness-105 transition disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={isSending || !input.trim()}
+            className="bg-brand-600 text-white font-bold px-5 py-2.5 rounded-full hover:brightness-105 transition disabled:opacity-60"
+          >
             Send
           </button>
         </form>

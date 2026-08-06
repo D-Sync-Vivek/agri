@@ -8,7 +8,6 @@ import { Link } from "react-router-dom";
 import { WifiOffIcon } from "../components/icons";
 import DeviceVitalsBanner from "../components/DeviceVitalsBanner";
 import SensorCard from "../components/SensorCard";
-import FooterSummary from "../components/FooterSummary";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 function getReadingStatus(sensorLabel: string, value: number): { label: string; className: string } {
@@ -144,7 +143,7 @@ export default function Home() {
         </p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4 w-full overflow-hidden">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4 w-full overflow-hidden">
         {sensors
           .filter((s) => s.isActive)
           .map((sensor) => {
@@ -212,8 +211,6 @@ export default function Home() {
             );
           })}
       </div>
-
-      <FooterSummary device={selectedDevice} />
     </div>
   );
 }

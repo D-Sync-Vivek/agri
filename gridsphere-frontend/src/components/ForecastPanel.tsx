@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { getForecast } from "../api/devices";
 import { ForecastResult } from "../types";
+import { Sun, Cloud, CloudRain, Droplets, Thermometer } from "lucide-react";
+
+// Helper to get weather icon based on rain probability and temperature
+function getWeatherIcon(rainProb: number, temp: number): JSX.Element {
+  if (rainProb > 70) return <CloudRain className="w-8 h-8 text-blue-500" />;
+  if (rainProb > 40) return <Cloud className="w-8 h-8 text-gray-500" />;
+  if (temp > 25) return <Sun className="w-8 h-8 text-yellow-500" />;
+  return <Sun className="w-8 h-8 text-yellow-300" />;
+}
 
 export default function ForecastPanel({ deviceId, hasLocation }: { deviceId: number; hasLocation: boolean }) {
   const [forecast, setForecast] = useState<ForecastResult | null>(null);
@@ -56,19 +65,30 @@ export default function ForecastPanel({ deviceId, hasLocation }: { deviceId: num
         <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">7-Day Forecast</span>
         <span className="text-xs text-ink-dim">via Open-Meteo</span>
       </div>
-      <div className="p-5 overflow-x-auto">
-        <div className="flex gap-3 min-w-max">
-          {days.map((d) => (
-            <div key={d.date} className="min-w-[90px] text-center p-2.5 rounded-lg bg-brand-50">
-              <div className="text-xs text-ink-dim mb-1.5">
-                {new Date(d.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}
+      <div className="p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          {days.map((d) => {
+            const avgTemp = (d.max + d.min) / 2;
+            return (
+              <div
+                key={d.date}
+                className="bg-linear-to-br from-gray-50 to-gray-100 rounded-xl p-4 text-center shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+              >
+                <div className="text-xs font-semibold text-ink-dim mb-1">
+                  {new Date(d.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}
+                </div>
+                <div className="flex justify-center my-2">{getWeatherIcon(d.rainProb, avgTemp)}</div>
+                <div className="flex justify-center items-baseline gap-1">
+                  <span className="text-lg font-bold">{Math.round(d.max)}°</span>
+                  <span className="text-sm text-ink-dim">/{Math.round(d.min)}°</span>
+                </div>
+                <div className="flex items-center justify-center gap-1 mt-1 text-xs text-ink-dim">
+                  <Droplets className="w-3 h-3" />
+                  <span>{Math.round(d.rainProb)}%</span>
+                </div>
               </div>
-              <div className="font-bold text-sm">
-                {Math.round(d.max)}° / {Math.round(d.min)}°
-              </div>
-              <div className="text-xs text-brand-700 mt-1">💧 {Math.round(d.rainProb)}%</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

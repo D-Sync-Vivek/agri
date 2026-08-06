@@ -9,8 +9,15 @@ export default function DeviceVitalsBanner({ device }: Props) {
   const isActive = device.status === "active";
   const connectivity = isActive ? "Strong" : "Offline";
 
+  // Dynamic background based on device status
+  const bgClass = isActive
+    ? "bg-linear-to-r from-brand-600 to-brand-700"
+    : "bg-linear-to-r from-red-500 to-orange-500";
+
   return (
-    <section className="w-full rounded-2xl bg-linear-to-r from-brand-600 to-brand-700 text-white flex flex-wrap items-center justify-between px-4 sm:px-6 py-4 sm:py-5 shadow-card relative overflow-hidden">
+    <section
+      className={`w-full rounded-2xl ${bgClass} text-white flex flex-wrap items-center justify-between px-4 sm:px-6 py-4 sm:py-5 shadow-card relative overflow-hidden`}
+    >
       <div className="flex flex-col justify-center h-full z-10 w-full sm:w-auto">
         <h2 className="text-headline-md font-bold mb-2 sm:mb-3">Device Vitals</h2>
         <div className="flex flex-wrap gap-4 sm:gap-6 items-center">

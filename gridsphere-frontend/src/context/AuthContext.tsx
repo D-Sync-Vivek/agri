@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { loginUser, registerUser, RegisterPayload } from "../api/auth";
-import { AuthResponse } from "../types";
+import { loginUser, registerUser, RegisterPayload, fetchCurrentUser } from "../api/auth";
+import { AuthResponse, User } from "../types";
 
 interface AuthContextValue {
-  user: AuthResponse["user"] | null;
+  user: User | null;
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -14,7 +14,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthResponse["user"] | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedUser = localStorage.getItem("gridsphere_user");
     if (storedToken && storedUser) {
       setToken(storedToken);
+      // The stored user from login may not have deviceCount/createdAt, but that's okay
       setUser(JSON.parse(storedUser));
     }
     setIsLoading(false);
@@ -60,5 +61,3 @@ export function useAuth(): AuthContextValue {
   if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
   return ctx;
 }
-
-

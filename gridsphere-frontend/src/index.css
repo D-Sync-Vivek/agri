@@ -23,7 +23,6 @@ body {
     flex-direction: column;
 }
 .chat-scroll {
-  max-height: 420px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;

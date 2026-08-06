@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import { AuthResponse } from "../types";
+import { AuthResponse, User } from "../types";
 
 export interface RegisterPayload {
   name: string;
@@ -26,9 +26,7 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
   return data;
 }
 
-export async function fetchCurrentUser() {
+export async function fetchCurrentUser(): Promise<User> {
   const { data } = await apiClient.get("/users/");
   return data.data;
 }
-
-

@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { HomeIcon, DevicesIcon, ProfileIcon, AdminIcon } from "./icons";
-import { Brain, BarChart3, Cloud, LineChart, MessageSquare } from "lucide-react";
+import { Brain, BarChart3, LineChart, MessageSquare } from "lucide-react";
 
 export default function AppNav() {
   const { token, user } = useAuth();
@@ -40,10 +40,6 @@ export default function AppNav() {
             <NavLink to="/insights" className={linkClass}>
               <BarChart3 size={24} />
               <span>Insights</span>
-            </NavLink>
-            <NavLink to="/forecast" className={linkClass}>
-              <Cloud size={24} />
-              <span>Forecast</span>
             </NavLink>
             <NavLink to="/analytics" className={linkClass}>
               <LineChart size={24} />

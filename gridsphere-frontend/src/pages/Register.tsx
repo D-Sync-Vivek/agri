@@ -26,7 +26,13 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-brand-600 via-brand-600 to-bg px-4 py-12">
+     <div
+      className="min-h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat overflow-hidden"
+      style={{
+        backgroundImage:
+          "linear-gradient(rgba(12, 55, 33, 0.55), rgba(12, 55, 33, 0.45)), url('/farm.jpg')",
+      }}
+    >
       <form onSubmit={handleSubmit} className="w-full max-w-md bg-white rounded-2xl shadow-card p-8">
         <p className="text-xs font-bold uppercase tracking-widest text-brand-600 mb-1">New Station</p>
         <h1 className="text-2xl font-bold mb-6">Create your account</h1>

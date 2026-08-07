@@ -8,7 +8,10 @@ import { generateAdvisories } from "../services/insightsService";
 import { getForecastForCoordinates } from "../services/forecastService";
 import { withEffectiveStatus } from "../utils/deviceStatus";
 import { computeTodayEt0 } from "../services/etService";
-import { getWindAnalytics, getRainAnalytics } from "../services/windRainAnalyticsService";
+import {
+  getWindAnalytics,
+  getRainAnalytics,
+} from "../services/windRainAnalyticsService";
 import { deviceOwnershipWhere } from "../utils/deviceAccess";
 import { z } from "zod";
 
@@ -21,30 +24,32 @@ export async function createDevice(req: Request, res: Response): Promise<void> {
   const deviceIn = DeviceCreateSchema.parse(req.body);
   const userId = req.currentUser!.id;
 
-  const newDevice = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const device = await tx.device.create({
-      data: {
-        deviceUid: deviceIn.device_uid,
-        deviceName: deviceIn.device_name ?? undefined,
-        description: deviceIn.description ?? undefined,
-        frequency: deviceIn.frequency,
-        locationName: deviceIn.location_name ?? undefined,
-        latitude: deviceIn.latitude ?? undefined,
-        longitude: deviceIn.longitude ?? undefined,
-      },
-    });
+  const newDevice = await prisma.$transaction(
+    async (tx: Prisma.TransactionClient) => {
+      const device = await tx.device.create({
+        data: {
+          deviceUid: deviceIn.device_uid,
+          deviceName: deviceIn.device_name ?? undefined,
+          description: deviceIn.description ?? undefined,
+          frequency: deviceIn.frequency,
+          locationName: deviceIn.location_name ?? undefined,
+          latitude: deviceIn.latitude ?? undefined,
+          longitude: deviceIn.longitude ?? undefined,
+        },
+      });
 
-    await tx.deviceUser.create({
-      data: {
-        userId,
-        deviceId: device.id,
-        isOwner: true,
-        role: "owner",
-      },
-    });
+      await tx.deviceUser.create({
+        data: {
+          userId,
+          deviceId: device.id,
+          isOwner: true,
+          role: "owner",
+        },
+      });
 
-    return device;
-  });
+      return device;
+    },
+  );
 
   res.status(201).json(withEffectiveStatus(newDevice));
 }
@@ -57,7 +62,10 @@ export async function getMyDevices(req: Request, res: Response): Promise<void> {
   const userId = req.currentUser!.id;
 
   const devices = await prisma.device.findMany({
-    where: req.currentUser?.role === "admin" ? {} : { userAssociations: { some: { userId } } },
+    where:
+      req.currentUser?.role === "admin"
+        ? {}
+        : { userAssociations: { some: { userId } } },
   });
 
   res.status(200).json(devices.map(withEffectiveStatus));
@@ -91,7 +99,10 @@ export async function getLiveData(req: Request, res: Response): Promise<void> {
  * GET /devices/:device_id/history
  * Equivalent of app/routers/device_router.py -> get_device_history
  */
-export async function getDeviceHistory(req: Request, res: Response): Promise<void> {
+export async function getDeviceHistory(
+  req: Request,
+  res: Response,
+): Promise<void> {
   const userId = req.currentUser!.id;
   const deviceId = parseInt(req.params.device_id, 10);
   const range = (req.query.range as string) || "weekly";
@@ -111,11 +122,17 @@ export async function getDeviceHistory(req: Request, res: Response): Promise<voi
 
   if (range === "daily") {
     // Today only (since local midnight), not a rolling 24h window.
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     where.recordedAt = { gte: startOfDay };
   } else if (range === "weekly") {
     // Rolling window: the last 7 days of data, including today.
-    where.recordedAt = { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) };
+    where.recordedAt = {
+      gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+    };
   } else if (range === "monthly") {
     // The current calendar month (from the 1st through now), not a
     // rolling 30-day window.
@@ -142,16 +159,26 @@ export async function getDeviceHistory(req: Request, res: Response): Promise<voi
  * GET /devices/:device_id/industry
  * Equivalent of app/routers/device_router.py -> get_industry_type (mock response, preserved as-is)
  */
-export async function getIndustryType(_req: Request, res: Response): Promise<void> {
-  res.status(200).json({ status: true, data: { industry_label: "Agriculture" } });
+export async function getIndustryType(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  res
+    .status(200)
+    .json({ status: true, data: { industry_label: "Agriculture" } });
 }
 
 /**
  * POST /devices/:device_id/industry
  * Equivalent of app/routers/device_router.py -> update_industry_type (mock response, preserved as-is)
  */
-export async function updateIndustryType(_req: Request, res: Response): Promise<void> {
-  res.status(200).json({ status: true, message: "Industry type updated successfully" });
+export async function updateIndustryType(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  res
+    .status(200)
+    .json({ status: true, message: "Industry type updated successfully" });
 }
 
 /**
@@ -174,10 +201,16 @@ export async function getForecast(req: Request, res: Response): Promise<void> {
   }
 
   if (device.latitude === null || device.longitude === null) {
-    throw new ApiError(400, "This device has no location set - add latitude/longitude to fetch a forecast.");
+    throw new ApiError(
+      400,
+      "This device has no location set - add latitude/longitude to fetch a forecast.",
+    );
   }
 
-  const forecast = await getForecastForCoordinates(device.latitude, device.longitude);
+  const forecast = await getForecastForCoordinates(
+    device.latitude,
+    device.longitude,
+  );
   res.status(200).json({ status: "success", data: forecast });
 }
 
@@ -202,10 +235,15 @@ export async function getInsights(req: Request, res: Response): Promise<void> {
     throw new ApiError(404, "Device not found or unauthorized");
   }
 
-  const sensors = await prisma.deviceSensor.findMany({ where: { deviceId, isActive: true } });
+  const sensors = await prisma.deviceSensor.findMany({
+    where: { deviceId, isActive: true },
+  });
 
   async function latestValueForLabel(label: string): Promise<number | null> {
-    const sensor = sensors.find((s: { sensorLabel: string | null }) => s.sensorLabel?.toLowerCase() === label);
+    const sensor = sensors.find(
+      (s: { sensorLabel: string | null }) =>
+        s.sensorLabel?.toLowerCase() === label,
+    );
     if (!sensor) return null;
     const reading = await prisma.sensorReading.findFirst({
       where: { deviceSensorId: sensor.id },
@@ -214,14 +252,23 @@ export async function getInsights(req: Request, res: Response): Promise<void> {
     return reading?.value ?? null;
   }
 
-  const tempSensor = sensors.find((s: { sensorLabel: string | null }) => s.sensorLabel?.toLowerCase() === "temp");
+  const tempSensor = sensors.find(
+    (s: { sensorLabel: string | null }) =>
+      s.sensorLabel?.toLowerCase() === "temp",
+  );
 
-  const [temperatureC, humidityPct, windSpeedMs, et0Result] = await Promise.all([
-    latestValueForLabel("temp"),
-    latestValueForLabel("humidity"),
-    latestValueForLabel("wind_speed"),
-    computeTodayEt0({ tempSensorId: tempSensor?.id ?? null, latitude: device.latitude, longitude: device.longitude }),
-  ]);
+  const [temperatureC, humidityPct, windSpeedMs, et0Result] = await Promise.all(
+    [
+      latestValueForLabel("temp"),
+      latestValueForLabel("humidity"),
+      latestValueForLabel("wind_speed"),
+      computeTodayEt0({
+        tempSensorId: tempSensor?.id ?? null,
+        latitude: device.latitude,
+        longitude: device.longitude,
+      }),
+    ],
+  );
 
   const derived = calculateDerivedMetrics(temperatureC, humidityPct);
   derived.et0MmPerDay = et0Result?.value ?? null;
@@ -230,8 +277,12 @@ export async function getInsights(req: Request, res: Response): Promise<void> {
   let precipitationProbabilityNext12h: number | null = null;
   if (device.latitude !== null && device.longitude !== null) {
     try {
-      const forecast = await getForecastForCoordinates(device.latitude, device.longitude);
-      const probs = forecast.hourly.precipitation_probability?.slice(0, 12) ?? [];
+      const forecast = await getForecastForCoordinates(
+        device.latitude,
+        device.longitude,
+      );
+      const probs =
+        forecast.hourly.precipitation_probability?.slice(0, 12) ?? [];
       if (probs.length > 0) {
         precipitationProbabilityNext12h = Math.max(...probs);
       }
@@ -264,7 +315,10 @@ export async function getInsights(req: Request, res: Response): Promise<void> {
  * weekly|monthly|custom), but returns text/csv instead of JSON, joined
  * with the sensor label/unit for readability (Data Export feature).
  */
-export async function exportHistoryCsv(req: Request, res: Response): Promise<void> {
+export async function exportHistoryCsv(
+  req: Request,
+  res: Response,
+): Promise<void> {
   const userId = req.currentUser!.id;
   const deviceId = parseInt(req.params.device_id, 10);
   const range = (req.query.range as string) || "weekly";
@@ -283,10 +337,16 @@ export async function exportHistoryCsv(req: Request, res: Response): Promise<voi
   const where: Record<string, unknown> = { deviceSensor: { deviceId } };
 
   if (range === "daily") {
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     where.recordedAt = { gte: startOfDay };
   } else if (range === "weekly") {
-    where.recordedAt = { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) };
+    where.recordedAt = {
+      gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+    };
   } else if (range === "monthly") {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     where.recordedAt = { gte: startOfMonth };
@@ -308,24 +368,37 @@ export async function exportHistoryCsv(req: Request, res: Response): Promise<voi
   const header = "sensor_label,value,quality_flag,recorded_at\n";
   const rows = readings
     .map(
-      (r: { deviceSensor: { sensorLabel: string | null }; value: number | null; qualityFlag: string | null; recordedAt: Date | null }) =>
-        `${r.deviceSensor.sensorLabel ?? ""},${r.value ?? ""},${r.qualityFlag ?? ""},${r.recordedAt?.toISOString() ?? ""}`
+      (r: {
+        deviceSensor: { sensorLabel: string | null };
+        value: number | null;
+        qualityFlag: string | null;
+        recordedAt: Date | null;
+      }) =>
+        `${r.deviceSensor.sensorLabel ?? ""},${r.value ?? ""},${r.qualityFlag ?? ""},${r.recordedAt?.toISOString() ?? ""}`,
     )
     .join("\n");
 
   res.status(200);
   res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", `attachment; filename="device-${deviceId}-history-${range}.csv"`);
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="device-${deviceId}-history-${range}.csv"`,
+  );
   res.send(header + rows);
 }
 
 /** GET /devices/:device_id/wind-analytics?range=daily|weekly|monthly */
-export async function getWindAnalyticsHandler(req: Request, res: Response): Promise<void> {
+export async function getWindAnalyticsHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
   const userId = req.currentUser!.id;
   const deviceId = parseInt(req.params.device_id, 10);
   const range = (req.query.range as string) || "weekly";
 
-  const device = await prisma.device.findFirst({ where: deviceOwnershipWhere(req, deviceId) });
+  const device = await prisma.device.findFirst({
+    where: deviceOwnershipWhere(req, deviceId),
+  });
   if (!device) throw new ApiError(404, "Device not found or unauthorized");
 
   const data = await getWindAnalytics(deviceId, range);
@@ -333,11 +406,16 @@ export async function getWindAnalyticsHandler(req: Request, res: Response): Prom
 }
 
 /** GET /devices/:device_id/rain-analytics */
-export async function getRainAnalyticsHandler(req: Request, res: Response): Promise<void> {
+export async function getRainAnalyticsHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
   const userId = req.currentUser!.id;
   const deviceId = parseInt(req.params.device_id, 10);
 
-  const device = await prisma.device.findFirst({ where: deviceOwnershipWhere(req, deviceId) });
+  const device = await prisma.device.findFirst({
+    where: deviceOwnershipWhere(req, deviceId),
+  });
   if (!device) throw new ApiError(404, "Device not found or unauthorized");
 
   const data = await getRainAnalytics(deviceId);
@@ -355,7 +433,10 @@ const DeleteReadingsQuerySchema = z.object({
  * If no range provided, deletes readings from the last 24 hours.
  * Only accessible to users with access to the device (admins bypass).
  */
-export async function deleteReadings(req: Request, res: Response): Promise<void> {
+export async function deleteReadings(
+  req: Request,
+  res: Response,
+): Promise<void> {
   const userId = req.currentUser!.id;
   const deviceId = parseInt(req.params.device_id, 10);
 
@@ -366,23 +447,17 @@ export async function deleteReadings(req: Request, res: Response): Promise<void>
     throw new ApiError(404, "Device not found or unauthorized");
   }
 
-  const query = DeleteReadingsQuerySchema.parse(req.query);
-  let from: Date, to: Date;
+  // Schema now accepts both query params and body fields
+  const DeleteReadingsSchema = z.object({
+    from: z.string().datetime({ offset: true }).optional(),
+    to: z.string().datetime({ offset: true }).optional(),
+    readingIds: z.array(z.number().int()).optional(),
+  });
 
-  if (query.from && query.to) {
-    from = new Date(query.from);
-    to = new Date(query.to);
-    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
-      throw new ApiError(400, "Invalid date format. Use ISO 8601 datetime strings.");
-    }
-    if (from > to) {
-      throw new ApiError(400, "from date must be before to date");
-    }
-  } else {
-    // Default: last 24 hours
-    to = new Date();
-    from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
-  }
+  // Parse query and body separately, then merge (body takes precedence for readingIds)
+  const query = DeleteReadingsSchema.parse(req.query);
+  const body = DeleteReadingsSchema.parse(req.body);
+  const { from, to, readingIds } = { ...query, ...body };
 
   // Get all device sensor ids for this device
   const sensors = await prisma.deviceSensor.findMany({
@@ -392,19 +467,48 @@ export async function deleteReadings(req: Request, res: Response): Promise<void>
   const sensorIds = sensors.map((s) => s.id);
 
   if (sensorIds.length === 0) {
-    res.status(200).json({ status: "success", message: "No sensors on this device, nothing deleted." });
+    res
+      .status(200)
+      .json({
+        status: "success",
+        message: "No sensors on this device, nothing deleted.",
+      });
     return;
   }
 
-  const deleted = await prisma.sensorReading.deleteMany({
-    where: {
-      deviceSensorId: { in: sensorIds },
-      recordedAt: { gte: from, lte: to },
-    },
-  });
+  // Build the where clause
+  const where: any = { deviceSensorId: { in: sensorIds } };
+
+  if (readingIds && readingIds.length > 0) {
+    // Delete by specific reading IDs
+    where.id = { in: readingIds };
+  } else {
+    // Delete by date range (or default last 24h)
+    let fromDate: Date, toDate: Date;
+    if (from && to) {
+      fromDate = new Date(from);
+      toDate = new Date(to);
+      if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        throw new ApiError(
+          400,
+          "Invalid date format. Use ISO 8601 datetime strings.",
+        );
+      }
+      if (fromDate > toDate) {
+        throw new ApiError(400, "from date must be before to date");
+      }
+    } else {
+      // Default: last 24 hours
+      toDate = new Date();
+      fromDate = new Date(toDate.getTime() - 24 * 60 * 60 * 1000);
+    }
+    where.recordedAt = { gte: fromDate, lte: toDate };
+  }
+
+  const deleted = await prisma.sensorReading.deleteMany({ where });
 
   res.status(200).json({
     status: "success",
-    message: `Deleted ${deleted.count} readings within the specified range.`,
+    message: `Deleted ${deleted.count} readings.`,
   });
 }

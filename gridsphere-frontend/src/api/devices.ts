@@ -111,7 +111,6 @@ export async function getRainAnalytics(deviceId: number, range: HistoryRange = "
   return data.data;
 }
 
-// ===== NEW DELETE FUNCTION =====
 export async function deleteDeviceReadings(
   deviceId: number,
   from?: string,
@@ -121,5 +120,16 @@ export async function deleteDeviceReadings(
   if (from) params.from = from;
   if (to) params.to = to;
   const { data } = await apiClient.delete(`/devices/${deviceId}/readings`, { params });
+  return data;
+}
+
+// NEW: Delete specific readings by their IDs
+export async function deleteReadingsByIds(
+  deviceId: number,
+  readingIds: number[]
+): Promise<{ message: string }> {
+  const { data } = await apiClient.delete(`/devices/${deviceId}/readings`, {
+    data: { readingIds },
+  });
   return data;
 }

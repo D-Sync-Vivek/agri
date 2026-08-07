@@ -15,6 +15,7 @@ import {
   HistoryRange,
   deleteDeviceReadings,
   downloadHistoryCsv,
+  deleteReadingsByIds,
 } from "../api/devices";
 import { listDeviceSensors, listSensorTypes, updateDeviceSensor } from "../api/sensors";
 import { DeviceSensor, SensorReading, SensorType } from "../types";
@@ -35,8 +36,6 @@ type Tab = "info" | "history" | "sensors" | "access";
 
 const LINE_COLORS = ["#1F6E44", "#E0932E", "#2F86C9", "#D64545", "#9b7fc7"];
 
-// Basic status classification for the redesigned sensor cards.
-// Purely presentational — doesn't affect data or alerts logic.
 function getReadingStatus(sensorLabel: string, value: number): { label: string; className: string } {
   const label = sensorLabel.toLowerCase();
   const optimal = { label: "Optimal", className: "bg-brand-50 text-brand-700" };
@@ -50,7 +49,6 @@ function getReadingStatus(sensorLabel: string, value: number): { label: string; 
   return optimal;
 }
 
-// Utility to format backend error detail (Zod arrays, strings, etc.)
 function formatErrorDetail(detail: any): string {
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) {
@@ -71,23 +69,25 @@ export default function DeviceDetail() {
   const [showAddSensor, setShowAddSensor] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Custom range
   const [customFrom, setCustomFrom] = useState<string>("");
   const [customTo, setCustomTo] = useState<string>("");
   const [isCustomRange, setIsCustomRange] = useState<boolean>(false);
 
-  // Delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteFrom, setDeleteFrom] = useState<string>("");
   const [deleteTo, setDeleteTo] = useState<string>("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Device info
+  // New: selection state – store a Set of reading IDs (all IDs from selected rows)
+  const [selectedReadingIds, setSelectedReadingIds] = useState<Set<number>>(new Set());
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  const [isConfirmDeleting, setIsConfirmDeleting] = useState(false);
+
   const [device, setDevice] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
 
-  // Access management
   const [assignments, setAssignments] = useState<DeviceAssignment[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | "">("");
@@ -168,23 +168,23 @@ export default function DeviceDetail() {
     }
   }, [tab, range, id, isCustomRange, customFrom, customTo]);
 
-const applyCustomRange = () => {
-  if (!customFrom || !customTo) {
-    setError("Please select both start and end date/time.");
-    return;
-  }
-  const fromDate = new Date(customFrom);
-  const toDate = new Date(customTo);
-  if (fromDate > toDate) {
-    setError("Start date must be before end date.");
-    return;
-  }
-  setError(null);
-  setIsCustomRange(true);
-  const fromISO = getLocalISOStringWithOffset(customFrom);
-  const toISO = getLocalISOStringWithOffset(customTo);
-  fetchHistory("custom", fromISO, toISO);
-};
+  const applyCustomRange = () => {
+    if (!customFrom || !customTo) {
+      setError("Please select both start and end date/time.");
+      return;
+    }
+    const fromDate = new Date(customFrom);
+    const toDate = new Date(customTo);
+    if (fromDate > toDate) {
+      setError("Start date must be before end date.");
+      return;
+    }
+    setError(null);
+    setIsCustomRange(true);
+    const fromISO = getLocalISOStringWithOffset(customFrom);
+    const toISO = getLocalISOStringWithOffset(customTo);
+    fetchHistory("custom", fromISO, toISO);
+  };
 
   const clearCustomRange = () => {
     setIsCustomRange(false);
@@ -340,20 +340,27 @@ const applyCustomRange = () => {
     return Array.from(labels);
   }, [sensors]);
 
+  // Compute logRows – each row now has an array of all reading IDs
   const logRows = useMemo(() => {
     const byTime = new Map<
       string,
-      { time: string; readingId: number; deviceId: number; quality: string; values: Record<string, number> }
+      {
+        time: string;
+        readingIds: number[];
+        deviceId: number;
+        quality: string;
+        values: Record<string, number>;
+      }
     >();
     for (const r of historyReadings) {
       const sensor = sensorLabelById.get(r.deviceSensorId);
       const label = sensor?.sensorLabel || `sensor_${r.deviceSensorId}`;
       const t = r.recordedAt;
       if (!byTime.has(t)) {
-        byTime.set(t, { time: t, readingId: r.id, deviceId: id, quality: "ok", values: {} });
+        byTime.set(t, { time: t, readingIds: [], deviceId: id, quality: "ok", values: {} });
       }
       const row = byTime.get(t)!;
-      row.readingId = Math.min(row.readingId, r.id);
+      row.readingIds.push(r.id);
       row.values[label] = r.value;
       if (r.qualityFlag && r.qualityFlag.toLowerCase() !== "ok") row.quality = r.qualityFlag;
     }
@@ -381,6 +388,70 @@ const applyCustomRange = () => {
       setError(formatErrorDetail(err?.response?.data?.detail || "Could not update sensor"));
     }
   }
+
+  // --- Row‑level selection handlers ---
+  function toggleSelectRow(row: typeof logRows[0]) {
+    const allIds = row.readingIds;
+    const isSelected = allIds.every((id) => selectedReadingIds.has(id));
+    setSelectedReadingIds((prev) => {
+      const next = new Set(prev);
+      if (isSelected) {
+        allIds.forEach((id) => next.delete(id));
+      } else {
+        allIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAll(rows: typeof logRows) {
+    const allIds = rows.flatMap((r) => r.readingIds);
+    const allSelected = allIds.every((id) => selectedReadingIds.has(id));
+    setSelectedReadingIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        allIds.forEach((id) => next.delete(id));
+      } else {
+        allIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }
+
+  function openDeleteSelectedModal() {
+    if (selectedReadingIds.size === 0) return;
+    setDeleteConfirmationText("");
+    setShowConfirmDeleteModal(true);
+  }
+
+  async function handleConfirmDelete() {
+    if (deleteConfirmationText.toLowerCase() !== "delete") return;
+    setIsConfirmDeleting(true);
+    setError(null);
+    try {
+      const result = await deleteReadingsByIds(id, Array.from(selectedReadingIds));
+      setSelectedReadingIds(new Set());
+      setShowConfirmDeleteModal(false);
+      // Refresh history
+      if (isCustomRange && customFrom && customTo) {
+        const fromISO = getLocalISOStringWithOffset(customFrom);
+        const toISO = getLocalISOStringWithOffset(customTo);
+        fetchHistory("custom", fromISO, toISO);
+      } else {
+        fetchHistory(range);
+      }
+      alert(result.message);
+    } catch (err: any) {
+      setError(formatErrorDetail(err?.response?.data?.detail || "Could not delete readings"));
+    } finally {
+      setIsConfirmDeleting(false);
+    }
+  }
+
+  // Count selected rows (rows where all its reading IDs are selected)
+  const selectedRowCount = logRows.filter((row) =>
+    row.readingIds.every((id) => selectedReadingIds.has(id))
+  ).length;
 
   if (!device) return <div className="text-center text-ink-dim py-12">Loading device…</div>;
 
@@ -414,6 +485,7 @@ const applyCustomRange = () => {
         ))}
       </div>
 
+      {/* Info tab – unchanged */}
       {tab === "info" && (
         <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-8">
           <div className="px-5 py-4 border-b border-gray-200">
@@ -561,6 +633,7 @@ const applyCustomRange = () => {
         </div>
       )}
 
+      {/* History tab – modified with row selection */}
       {tab === "history" && (
         <>
           <div className="flex flex-col gap-3 mb-4 p-4 bg-white rounded-xl border border-gray-200 shadow-card">
@@ -622,7 +695,7 @@ const applyCustomRange = () => {
                 onClick={openDeleteModal}
                 className="bg-red-50 text-red-600 font-semibold px-4 py-2 rounded-lg hover:bg-red-100 transition"
               >
-                Delete Readings
+                Delete Range
               </button>
               <button
                 onClick={async () => {
@@ -647,7 +720,7 @@ const applyCustomRange = () => {
             </div>
           </div>
 
-          {/* Device Vitals Banner */}
+          {/* Device Vitals Banner – unchanged */}
           <div
             className="w-full rounded-xl text-white flex flex-wrap gap-8 items-center px-8 py-6 mb-6 shadow-card"
             style={{ background: "linear-gradient(135deg, #16A34A 0%, #15803D 100%)" }}
@@ -780,51 +853,93 @@ const applyCustomRange = () => {
             </div>
           </div>
 
+          {/* Reading Log with row‑level selection */}
           <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-8">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-ink-dim">Reading Log</span>
-              <span className="text-xs text-ink-dim">{logRows.length} reading{logRows.length === 1 ? "" : "s"}</span>
+              <span className="text-xs text-ink-dim">{logRows.length} row{logRows.length !== 1 ? 's' : ''}</span>
             </div>
             {logRows.length === 0 ? (
               <p className="text-ink-dim p-5">No readings in this range yet.</p>
             ) : (
-              <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-white border-b border-gray-200">
-                    <tr>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">Status</th>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">Reading Id</th>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">D Id</th>
-                      {chartLabels.map((label) => (
-                        <th key={label} className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">{label}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {logRows.map((row) => (
-                      <tr key={row.time} className="border-b border-gray-100 last:border-0">
-                        <td className="px-4 py-3">
-                          <span className={`inline-block text-xs font-bold px-2 py-1 rounded-full ${row.quality === 'ok' ? 'bg-brand-50 text-brand-700' : 'bg-red-50 text-red-600'}`}>
-                            {row.quality.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">{row.readingId}</td>
-                        <td className="px-4 py-3">{row.deviceId}</td>
+              <>
+                {/* Delete Selected bar – shows row count */}
+                <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-200">
+                  <span className="text-xs text-ink-dim">{selectedRowCount} row{selectedRowCount !== 1 ? 's' : ''} selected</span>
+                  <button
+                    onClick={openDeleteSelectedModal}
+                    disabled={selectedRowCount === 0}
+                    className="bg-red-50 text-red-600 font-semibold px-4 py-1.5 rounded-lg text-sm hover:bg-red-100 transition disabled:opacity-50"
+                  >
+                    Delete Selected
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-white border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={logRows.length > 0 && logRows.every((row) =>
+                              row.readingIds.every((id) => selectedReadingIds.has(id))
+                            )}
+                            onChange={() => toggleSelectAll(logRows)}
+                            className="w-4 h-4 rounded border-gray-300 focus:ring-brand-600"
+                          />
+                        </th>
+                        <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">Status</th>
+                        <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">Reading Id</th>
+                        <th className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">D Id</th>
                         {chartLabels.map((label) => (
-                          <td key={label} className="px-4 py-3">
-                            {row.values[label] !== undefined ? row.values[label].toFixed(2) : "—"}
-                          </td>
+                          <th key={label} className="text-left text-xs font-bold uppercase tracking-wider text-ink-dim px-4 py-3">{label}</th>
                         ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {logRows.map((row) => {
+                        const isRowSelected = row.readingIds.every((id) => selectedReadingIds.has(id));
+                        return (
+                          <tr key={row.time} className="border-b border-gray-100 last:border-0">
+                            <td className="px-4 py-3">
+                              <input
+                                type="checkbox"
+                                checked={isRowSelected}
+                                onChange={() => toggleSelectRow(row)}
+                                className="w-4 h-4 rounded border-gray-300 focus:ring-brand-600"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-block text-xs font-bold px-2 py-1 rounded-full ${row.quality === 'ok' ? 'bg-brand-50 text-brand-700' : 'bg-red-50 text-red-600'}`}>
+                                {row.quality.toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              {/* Display the first reading ID as a representative, or a range */}
+                              {row.readingIds.length > 1
+                                ? `${Math.min(...row.readingIds)}…${Math.max(...row.readingIds)}`
+                                : row.readingIds[0]}
+                            </td>
+                            <td className="px-4 py-3">{row.deviceId}</td>
+                            {chartLabels.map((label) => (
+                              <td key={label} className="px-4 py-3">
+                                {row.values[label] !== undefined ? row.values[label].toFixed(2) : "—"}
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </>
       )}
 
+      {/* Sensors and Access tabs – unchanged */}
       {tab === "sensors" && (
         <div className="bg-white border border-gray-200 rounded-xl shadow-card overflow-hidden mb-8">
           <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
@@ -958,11 +1073,11 @@ const applyCustomRange = () => {
         />
       )}
 
-      {/* Delete Readings Modal */}
+      {/* Delete Range Modal – unchanged */}
       {showDeleteModal && (
         <div className="modal-backdrop" onClick={() => setShowDeleteModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">Delete Readings</h3>
+            <h3 className="text-lg font-bold mb-4">Delete Readings by Range</h3>
             <p className="text-sm text-ink-dim mb-4">
               This will permanently delete all sensor readings for this device within the selected date/time range. This action cannot be undone.
             </p>
@@ -999,7 +1114,47 @@ const applyCustomRange = () => {
                 disabled={isDeleting}
                 className="bg-red-600 text-white font-bold px-4 py-2 rounded-lg hover:brightness-105 transition disabled:opacity-60"
               >
-                {isDeleting ? "Deleting…" : "Delete Readings"}
+                {isDeleting ? "Deleting…" : "Delete Range"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Selected Modal – updated message */}
+      {showConfirmDeleteModal && (
+        <div className="modal-backdrop" onClick={() => setShowConfirmDeleteModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-2">Delete Selected Rows</h3>
+            <p className="text-sm text-ink-dim mb-4">
+              You are about to delete <strong>{selectedRowCount}</strong> row{selectedRowCount !== 1 ? 's' : ''} containing <strong>{selectedReadingIds.size}</strong> sensor reading{selectedReadingIds.size !== 1 ? 's' : ''}. This action cannot be undone.
+            </p>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-ink-dim mb-1.5">
+                Type <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">delete</span> to confirm
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmationText}
+                onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                placeholder="delete"
+                className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirmDeleteModal(false)}
+                className="bg-transparent border border-gray-200 text-ink px-4 py-2 rounded-lg hover:border-brand-600 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isConfirmDeleting || deleteConfirmationText.toLowerCase() !== "delete"}
+                className="bg-red-600 text-white font-bold px-4 py-2 rounded-lg hover:brightness-105 transition disabled:opacity-60"
+              >
+                {isConfirmDeleting ? "Deleting…" : "Delete Permanently"}
               </button>
             </div>
           </div>

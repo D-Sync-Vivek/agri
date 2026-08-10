@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { getChatHistory, sendChatMessage } from "../api/chat";
 import { ChatMessage } from "../types";
+import ReactMarkdown from 'react-markdown'
 
 export default function ChatPanel({ deviceId }: { deviceId: number }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -100,7 +101,7 @@ export default function ChatPanel({ deviceId }: { deviceId: number }) {
               .filter((m) => m && m.role)
               .map((m) => (
                 <div key={m.id} className={`chat-bubble ${m.role}`}>
-                  {m.content}
+                  <ReactMarkdown>{m.content}</ReactMarkdown>
                 </div>
               ))}
             {isSending && <div className="chat-bubble assistant">Thinking…</div>}

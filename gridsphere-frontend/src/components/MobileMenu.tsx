@@ -1,7 +1,18 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { HomeIcon, DevicesIcon, ProfileIcon, AdminIcon } from "./icons";
-import { Brain, BarChart3, Cloud, LineChart, MessageSquare, X } from "lucide-react";
+import {
+  Home,
+  LayoutDashboard,
+  Router,
+  Microchip,
+  Users,
+  UserCircle,
+  Brain,
+  BarChart3,
+  LineChart,
+  MessageSquare,
+  X,
+} from "lucide-react";
 
 interface Props {
   isOpen: boolean;
@@ -55,7 +66,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
           {!isAdmin ? (
             <>
               <NavLink to="/" end className={linkClass} onClick={onClose}>
-                <HomeIcon size={20} />
+                <Home size={20} />
                 Home
               </NavLink>
               <NavLink to="/advisory" className={linkClass} onClick={onClose}>
@@ -77,36 +88,27 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
             </>
           ) : (
             <>
-              <NavLink to="/admin" className={linkClass} onClick={onClose}>
-                <AdminIcon size={20} />
-                Admin
+              <NavLink to="/admin" end className={linkClass} onClick={onClose}>
+                <LayoutDashboard size={20} />
+                Overview
               </NavLink>
               <NavLink to="/devices" className={linkClass} onClick={onClose}>
-                <DevicesIcon size={20} />
+                <Router size={20} />
                 Devices
               </NavLink>
               <NavLink to="/admin/sensors" className={linkClass} onClick={onClose}>
-                <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H5.78a1.65 1.65 0 0 0-1.51 1 1.65 1.65 0 0 0 .33 1.82l6.22 6.22a1.65 1.65 0 0 0 2.36 0l6.22-6.22z" />
-                  <path d="M10 10V7a2 2 0 0 1 4 0v3" />
-                </svg>
+                <Microchip size={20} />
                 Sensors
               </NavLink>
               <NavLink to="/admin/users" className={linkClass} onClick={onClose}>
-                <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" strokeLinecap="round" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" strokeLinecap="round" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" strokeLinecap="round" />
-                </svg>
+                <Users size={20} />
                 Users
               </NavLink>
             </>
           )}
           <div className="border-t border-white/20 my-2" />
           <NavLink to="/profile" className={linkClass} onClick={onClose}>
-            <ProfileIcon size={20} />
+            <UserCircle size={20} />
             Profile
           </NavLink>
         </nav>

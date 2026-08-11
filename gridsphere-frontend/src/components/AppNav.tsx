@@ -1,11 +1,23 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate} from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { HomeIcon, DevicesIcon, ProfileIcon, AdminIcon } from "./icons";
-import { Brain, BarChart3, LineChart, MessageSquare } from "lucide-react";
+import {
+  LayoutDashboard,
+  Router,
+  Microchip,
+  Users,
+  UserCircle,
+  LogOut,
+  Home,
+  Brain,
+  BarChart3,
+  LineChart,
+  MessageSquare,
+} from "lucide-react";
 
 export default function AppNav() {
-  const { token, user } = useAuth();
+  const { token, user, logout} = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   if (!token) return null;
   if (location.pathname === "/login" || location.pathname === "/register") return null;
@@ -19,73 +31,59 @@ export default function AppNav() {
         : "text-white/70 hover:text-white hover:bg-white/10"
     }`;
 
+    const navItems = isAdmin
+    ? [
+        { to: "/admin", icon: LayoutDashboard, label: "Overview" },
+        { to: "/devices", icon: Router, label: "Devices" },
+        { to: "/admin/sensors", icon: Microchip, label: "Sensors" },
+        { to: "/admin/users", icon: Users, label: "Users" },
+      ]
+    : [
+        { to: "/", icon: Home, label: "Home" },
+        { to: "/advisory", icon: Brain, label: "Advisory" },
+        { to: "/insights", icon: BarChart3, label: "Insights" },
+        { to: "/analytics", icon: LineChart, label: "Analytics" },
+        { to: "/chat", icon: MessageSquare, label: "Chat" },
+      ];
+
+      const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
     <nav
       aria-label="Main navigation"
       className="hidden md:flex fixed left-0 top-0 h-full w-22 flex-col items-center py-8 z-50 bg-brand-600 text-white shadow-sm overflow-y-auto"
     >
-      <img src="/favicon.svg" alt="logo" className="w-10 mb-4" />
-
-      <div className="flex flex-col gap-4 w-full px-2">
-        {!isAdmin ? (
-          <>
-            <NavLink to="/" end className={linkClass}>
-              <HomeIcon size={24} />
-              <span>Home</span>
-            </NavLink>
-            <NavLink to="/advisory" className={linkClass}>
-              <Brain size={24} />
-              <span>Advisory</span>
-            </NavLink>
-            <NavLink to="/insights" className={linkClass}>
-              <BarChart3 size={24} />
-              <span>Insights</span>
-            </NavLink>
-            <NavLink to="/analytics" className={linkClass}>
-              <LineChart size={24} />
-              <span>Analytics</span>
-            </NavLink>
-            <NavLink to="/chat" className={linkClass}>
-              <MessageSquare size={24} />
-              <span>Chat</span>
-            </NavLink>
-          </>
-        ) : (
-          <>
-            <NavLink to="/admin" end className={linkClass}>
-              <AdminIcon size={24} />
-              <span>Admin</span>
-            </NavLink>
-            <NavLink to="/devices" className={linkClass}>
-              <DevicesIcon size={24} />
-              <span>Devices</span>
-            </NavLink>
-            <NavLink to="/admin/sensors" className={linkClass}>
-              <svg viewBox="0 0 24 24" width={24} height={24} fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H5.78a1.65 1.65 0 0 0-1.51 1 1.65 1.65 0 0 0 .33 1.82l6.22 6.22a1.65 1.65 0 0 0 2.36 0l6.22-6.22z" />
-                <path d="M10 10V7a2 2 0 0 1 4 0v3" />
-              </svg>
-              <span>Sensors</span>
-            </NavLink>
-            <NavLink to="/admin/users" className={linkClass}>
-              <svg viewBox="0 0 24 24" width={24} height={24} fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" strokeLinecap="round" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" strokeLinecap="round" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" strokeLinecap="round" />
-              </svg>
-              <span>Users</span>
-            </NavLink>
-          </>
-        )}
+      <div className="flex flex-col justify-center items-center gap-0 pb-4">
+        <img src="/favicon.svg" alt="logo" className="w-10 mb-4" />
+        <span className="text-xs">AgriSense</span>
       </div>
 
-      <div className="mt-auto w-full px-2">
+       {/* Navigation - icons with labels below */}
+      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+        {navItems.map((item) => (
+          <NavLink key={item.to} to={item.to} end className={linkClass}>
+            <item.icon size={20} />
+            <span className="text-center leading-tight">{item.label}</span>
+          </NavLink>
+        ))}
         <NavLink to="/profile" className={linkClass}>
-          <ProfileIcon size={24} />
+          <UserCircle size={20} />
           <span>Profile</span>
         </NavLink>
+      </nav>
+
+      {/* Logout - at bottom */}
+      <div className="px-2 pb-4 border-t border-white/10 pt-4">
+        <button
+          onClick={handleLogout}
+          className="flex flex-col items-center w-full py-3 px-2 rounded-lg text-xs font-medium text-white/80 hover:bg-[#2E8B57] hover:text-white transition-colors"
+        >
+          <LogOut size={20} />
+          <span>Logout</span>
+        </button>
       </div>
     </nav>
   );

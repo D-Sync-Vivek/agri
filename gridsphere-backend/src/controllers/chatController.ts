@@ -55,6 +55,50 @@ function generateDailySummary(
   return `${label} (${unit}):\n${lines.join("\n")}`;
 }
 
+// Cheap, cost-saving pre-filter. This is NOT a security boundary or a
+// substitute for the scope instructions in deepseekService's system prompt
+// - it's just a fast heuristic to skip the API call for obviously off-topic
+// messages (coding help, general trivia, homework, etc.) and save cost.
+// Ambiguous / short / borderline messages are always let through to the
+// model, since false positives (blocking a real farming question) are
+// worse than false negatives here.
+const ON_TOPIC_KEYWORDS = [
+  "crop", "plant", "farm", "field", "soil", "seed", "harvest", "yield",
+  "irrigat", "water", "rain", "weather", "forecast", "temperature", "humid",
+  "wind", "frost", "drought", "flood", "pest", "disease", "fungus", "fungal",
+  "blight", "insect", "sensor", "device", "reading", "moisture", "dew",
+  "heat index", "vpd", "et0", "evapotranspiration", "fertiliz", "nutrient",
+  "pesticide", "spray", "leaf", "root", "growth", "grow", "agricult",
+  "station", "gridsphere", "app", "condition", "climate", "co2", "pm2.5",
+  "air quality",
+];
+
+const OFF_TOPIC_SIGNALS = [
+  // general coding / homework requests unrelated to the app
+  "write a python", "write code", "javascript function", "leetcode",
+  "algorithm", "essay about", "poem about", "song lyrics", "translate this",
+  "who is the president", "capital of", "solve this equation",
+  "ignore previous instructions", "ignore your instructions", "system prompt",
+  "pretend you are", "act as", "jailbreak",
+];
+
+function isLikelyOffTopic(message: string): boolean {
+  const lower = message.toLowerCase();
+
+  // If it mentions any on-topic keyword, always let it through.
+  if (ON_TOPIC_KEYWORDS.some((kw) => lower.includes(kw))) {
+    return false;
+  }
+
+  // Only flag as off-topic if it also matches a known off-topic signal.
+  // A message with no keywords at all (e.g. "what should I do?") is
+  // ambiguous and should still go to the model, not be blocked here.
+  return OFF_TOPIC_SIGNALS.some((sig) => lower.includes(sig));
+}
+
+const OFF_TOPIC_REPLY =
+  "I'm the GridSphere field assistant, so I can only help with things like your device's readings, weather, crops, pests, and irrigation. Ask me something about your field or device and I'll dig in!";
+
 export async function sendChatMessage(req: Request, res: Response): Promise<void> {
   const userId = req.currentUser!.id;
   const deviceId = parseInt(req.params.device_id, 10);
@@ -70,6 +114,19 @@ export async function sendChatMessage(req: Request, res: Response): Promise<void
   });
   if (!device) {
     throw new ApiError(404, "Device not found or unauthorized");
+  }
+
+  if (isLikelyOffTopic(message)) {
+    await prisma.$transaction([
+      prisma.deviceChatMessage.create({
+        data: { deviceId, userId, role: "user", content: message },
+      }),
+      prisma.deviceChatMessage.create({
+        data: { deviceId, userId, role: "assistant", content: OFF_TOPIC_REPLY },
+      }),
+    ]);
+    res.status(200).json({ status: "success", data: { reply: OFF_TOPIC_REPLY } });
+    return;
   }
 
   const sensors = await prisma.deviceSensor.findMany({ where: { deviceId, isActive: true } });
@@ -212,4 +269,3 @@ export async function getChatHistory(req: Request, res: Response): Promise<void>
 
   res.status(200).json({ status: "success", data: messages });
 }
-

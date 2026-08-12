@@ -21,6 +21,8 @@ import AdvisoryPage from "./pages/AdvisoryPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import ChatPage from "./pages/ChatPage";
 import InsigthsForecast from "./components/InsightsForecast";
+import AdminCompare from "./pages/AdminCompare";
+import CompareDetail from "./pages/CompareDetail";
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -69,6 +71,8 @@ function AppContent() {
               <Route path="/admin/devices" element={<AdminDevices />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/sensors" element={<AdminSensors />} />
+              <Route path="/admin/compare" element={<AdminCompare />} />
+              <Route path="/admin/compare/sensor/:sensorId" element={<CompareDetail />} />
             </Route>
           </Routes>
         </Layout>

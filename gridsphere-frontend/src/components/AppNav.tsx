@@ -1,4 +1,4 @@
-import { NavLink, useLocation, useNavigate} from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard,
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 export default function AppNav() {
-  const { token, user, logout} = useAuth();
+  const { token, user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -25,28 +25,28 @@ export default function AppNav() {
   const isAdmin = user?.role === "admin";
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex flex-col items-center gap-1 p-2 rounded-xl text-[11px] font-medium tracking-wide transition-all duration-150 ease-in-out group ${
-      isActive
-        ? "bg-white/20 text-white"
-        : "text-white/70 hover:text-white hover:bg-white/10"
+    `flex flex-col items-center gap-1 p-2 rounded-xl text-[11px] font-medium tracking-wide transition-all duration-150 ease-in-out group ${isActive
+      ? "bg-white/20 text-white"
+      : "text-white/70 hover:text-white hover:bg-white/10"
     }`;
 
-    const navItems = isAdmin
+  const navItems = isAdmin
     ? [
-        { to: "/admin", icon: LayoutDashboard, label: "Overview" },
-        { to: "/devices", icon: Router, label: "Devices" },
-        { to: "/admin/sensors", icon: Microchip, label: "Sensors" },
-        { to: "/admin/users", icon: Users, label: "Users" },
-      ]
+      { to: "/admin", icon: LayoutDashboard, label: "Overview" },
+      { to: "/devices", icon: Router, label: "Devices" },
+      { to: "/admin/sensors", icon: Microchip, label: "Sensors" },
+      { to: "/admin/users", icon: Users, label: "Users" },
+      { to: "/admin/compare", icon: BarChart3, label: "Compare" },
+    ]
     : [
-        { to: "/", icon: Home, label: "Home" },
-        { to: "/advisory", icon: Brain, label: "Advisory" },
-        { to: "/insights", icon: BarChart3, label: "Insights" },
-        { to: "/analytics", icon: LineChart, label: "Analytics" },
-        { to: "/chat", icon: MessageSquare, label: "Chat" },
-      ];
+      { to: "/", icon: Home, label: "Home" },
+      { to: "/advisory", icon: Brain, label: "Advisory" },
+      { to: "/insights", icon: BarChart3, label: "Insights" },
+      { to: "/analytics", icon: LineChart, label: "Analytics" },
+      { to: "/chat", icon: MessageSquare, label: "Chat" },
+    ];
 
-      const handleLogout = () => {
+  const handleLogout = () => {
     logout();
     navigate("/login");
   };
@@ -61,7 +61,7 @@ export default function AppNav() {
         <span className="text-xs">AgriSense</span>
       </div>
 
-       {/* Navigation - icons with labels below */}
+      {/* Navigation - icons with labels below */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink key={item.to} to={item.to} end className={linkClass}>

@@ -183,7 +183,7 @@ export default function AdminUsers() {
                         </div>
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => startEdit(user)}
                             disabled={isCurrentUser}

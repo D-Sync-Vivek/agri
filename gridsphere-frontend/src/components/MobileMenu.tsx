@@ -104,6 +104,10 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
                 <Users size={20} />
                 Users
               </NavLink>
+              <NavLink to="/admin/compare" className={linkClass} onClick={onClose}>
+              <BarChart3 size={20} />
+                Compare
+              </NavLink>
             </>
           )}
           <div className="border-t border-white/20 my-2" />

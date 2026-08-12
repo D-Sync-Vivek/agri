@@ -175,8 +175,11 @@ export default function AdminCompare() {
         if (deviceSensorMap.has(label)) {
           const sensorIdForDevice = deviceSensorMap.get(label)!;
           const reading = readings
-            .filter((r) => r.deviceSensorId === sensorIdForDevice)
-            .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())[0] || null;
+            .filter((r: { deviceSensorId: number; recordedAt: string }) => r.deviceSensorId === sensorIdForDevice)
+            .sort(
+              (a: { recordedAt: string }, b: { recordedAt: string }) =>
+                new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+            )[0] || null;
           deviceReadings.push({
             deviceId,
             deviceName,

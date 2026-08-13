@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { adminListUsers, adminUpdateUser, adminDeleteUser, AdminUser, AdminUserUpdatePayload } from "../api/admin";
+import { useNavigate } from "react-router-dom";
+import { adminListUsers, adminUpdateUser, adminDeleteUser, AdminUserUpdatePayload } from "../api/admin";
 import { useAuth } from "../context/AuthContext";
 import { Edit, Trash2, RefreshCw, UserPlus, Filter } from "lucide-react";
+import { AdminUser } from "../types";
 
 export default function AdminUsers() {
+  const navigate = useNavigate(); // ✅ add
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,7 +152,11 @@ export default function AdminUsers() {
                   const avatarBg = isAdmin ? "bg-brand-600 text-white" : "bg-gray-200 text-gray-700";
 
                   return (
-                    <tr key={user.id} className="hover:bg-gray-50 transition-colors group">
+                    <tr
+                      key={user.id}
+                      className="hover:bg-gray-50 transition-colors group cursor-pointer"
+                      onClick={() => navigate(`/admin/users/${user.id}`)} 
+                    >
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm shadow-sm ring-2 ring-white ${avatarBg}`}>
@@ -185,7 +192,10 @@ export default function AdminUsers() {
                       <td className="py-3 px-4 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => startEdit(user)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // ✅ prevent row navigation
+                              startEdit(user);
+                            }}
                             disabled={isCurrentUser}
                             className={`p-1.5 rounded-md text-brand-600 bg-brand-50 hover:bg-brand-100 transition-colors ${
                               isCurrentUser ? "opacity-50 cursor-not-allowed" : ""
@@ -195,7 +205,10 @@ export default function AdminUsers() {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(user.id)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // ✅ prevent row navigation
+                              handleDelete(user.id);
+                            }}
                             disabled={isCurrentUser}
                             className={`p-1.5 rounded-md text-red-600 bg-red-50 hover:bg-red-100 transition-colors ${
                               isCurrentUser ? "opacity-50 cursor-not-allowed" : ""

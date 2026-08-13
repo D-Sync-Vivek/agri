@@ -162,6 +162,7 @@ connectDummyData()
   .then(seedCrops)
   .then(seedSensorTypes)
   .then(seedAdminUser)
+  .then(seedSubscriptionPlans)
   .catch((e) => {
     console.error(e);
     process.exit(1);
@@ -169,3 +170,47 @@ connectDummyData()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+  async function seedSubscriptionPlans() {
+  const plans = [
+    {
+      planName: "Basic",
+      planCode: "basic",
+      priceMonthly: 499,
+      priceYearly: 4999,
+      maxDevices: 1,
+      maxSensorsPerDevice: 5,
+      dataRetentionDays: 30,
+      featuresJson: { liveData: true, forecast: false, insights: false, advisory: false },
+    },
+    {
+      planName: "Pro",
+      planCode: "pro",
+      priceMonthly: 999,
+      priceYearly: 9999,
+      maxDevices: 5,
+      maxSensorsPerDevice: 10,
+      dataRetentionDays: 90,
+      featuresJson: { liveData: true, forecast: true, insights: true, advisory: false },
+    },
+    {
+      planName: "Enterprise",
+      planCode: "enterprise",
+      priceMonthly: 2499,
+      priceYearly: 24999,
+      maxDevices: null,
+      maxSensorsPerDevice: null,
+      dataRetentionDays: 365,
+      featuresJson: { liveData: true, forecast: true, insights: true, advisory: true },
+    },
+  ];
+
+  for (const plan of plans) {
+    await prisma.subscriptionPlan.upsert({
+      where: { planCode: plan.planCode },
+      update: plan,
+      create: plan,
+    });
+  }
+  console.log("Subscription plans seeded.");
+}

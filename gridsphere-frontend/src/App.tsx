@@ -23,6 +23,9 @@ import ChatPage from "./pages/ChatPage";
 import InsigthsForecast from "./components/InsightsForecast";
 import AdminCompare from "./pages/AdminCompare";
 import CompareDetail from "./pages/CompareDetail";
+import MyDevices from "./pages/MyDevice";
+import AdminSubscriptions from "./pages/AdminSubscriptions";
+import AdminUserDetail from "./pages/AdminUserDetail";
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -63,6 +66,7 @@ function AppContent() {
               />
               <Route path="/profile" element={<Profile />} />
               <Route path="/plans" element={<Plans />} />
+              <Route path="/my-devices" element={<MyDevices />} />
             </Route>
             <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
               <Route path="/devices" element={<Dashboard />} />
@@ -73,6 +77,8 @@ function AppContent() {
               <Route path="/admin/sensors" element={<AdminSensors />} />
               <Route path="/admin/compare" element={<AdminCompare />} />
               <Route path="/admin/compare/sensor/:sensorId" element={<CompareDetail />} />
+              <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+              <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
             </Route>
           </Routes>
         </Layout>

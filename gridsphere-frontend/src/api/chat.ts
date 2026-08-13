@@ -1,4 +1,3 @@
-// src/api/chat.ts
 import { apiClient } from "./client";
 import { ChatMessage } from "../types";
 

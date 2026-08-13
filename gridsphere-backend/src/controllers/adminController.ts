@@ -7,6 +7,8 @@ import {
   AdminDeviceUnassignSchema,
   AdminUserUpdateSchema,
 } from "../schemas/adminSchema";
+import { generateCouponCode } from "../utils/couponCode";
+import prisma from "../config/prisma";
 
 const adminService = new AdminService();
 
@@ -97,4 +99,65 @@ export async function checkDeepSeekStatus(req: Request, res: Response) {
 export async function getDeepSeekBalanceHandler(req: Request, res: Response) {
   const result = await getDeepSeekBalance();
   res.status(200).json({ status: "success", data: result });
+}
+
+
+/** POST /admin/coupons  { discountPercent, expiryMinutes } */
+export async function createCoupon(req: Request, res: Response): Promise<void> {
+  const { discountPercent, expiryMinutes } = req.body as { discountPercent: number; expiryMinutes: number };
+
+  if (!discountPercent || discountPercent <= 0 || discountPercent > 100) {
+    res.status(400).json({ status: "error", message: "discountPercent must be between 1 and 100" });
+    return;
+  }
+  if (!expiryMinutes || expiryMinutes <= 0) {
+    res.status(400).json({ status: "error", message: "expiryMinutes must be a positive number" });
+    return;
+  }
+
+  let code = generateCouponCode();
+  // extremely unlikely collision, but guard anyway
+  while (await prisma.coupon.findUnique({ where: { code } })) {
+    code = generateCouponCode();
+  }
+
+  const expiresAt = new Date(Date.now() + expiryMinutes * 60_000);
+
+  const coupon = await prisma.coupon.create({
+    data: {
+      code,
+      discountPercent,
+      expiresAt,
+      createdByAdminId: req.currentUser!.id,
+    },
+  });
+
+  res.status(201).json({ status: "success", data: coupon });
+}
+
+/** GET /admin/coupons */
+export async function listCoupons(_req: Request, res: Response): Promise<void> {
+  const coupons = await prisma.coupon.findMany({
+    include: { usedBy: { select: { id: true, name: true, email: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  res.status(200).json({ status: "success", data: coupons });
+}
+
+/** DELETE /admin/coupons/:coupon_id — revoke an unused coupon */
+export async function revokeCoupon(req: Request, res: Response): Promise<void> {
+  const couponId = parseInt(req.params.coupon_id, 10);
+  const coupon = await prisma.coupon.findUnique({ where: { id: couponId } });
+
+  if (!coupon) {
+    res.status(404).json({ status: "error", message: "Coupon not found" });
+    return;
+  }
+  if (coupon.usedByUserId) {
+    res.status(400).json({ status: "error", message: "Cannot revoke a coupon that's already been used" });
+    return;
+  }
+
+  await prisma.coupon.delete({ where: { id: couponId } });
+  res.status(200).json({ status: "success", message: "Coupon revoked" });
 }

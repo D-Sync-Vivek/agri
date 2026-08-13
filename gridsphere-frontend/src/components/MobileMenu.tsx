@@ -11,6 +11,7 @@ import {
   BarChart3,
   LineChart,
   MessageSquare,
+  CreditCard,
   X,
 } from "lucide-react";
 
@@ -69,6 +70,10 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
                 <Home size={20} />
                 Home
               </NavLink>
+              <NavLink to="/my-devices" className={linkClass} onClick={onClose}>
+                <CreditCard size={20} />
+                My Devices
+              </NavLink>
               <NavLink to="/advisory" className={linkClass} onClick={onClose}>
                 <Brain size={20} />
                 Advisory
@@ -107,6 +112,10 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
               <NavLink to="/admin/compare" className={linkClass} onClick={onClose}>
               <BarChart3 size={20} />
                 Compare
+              </NavLink>
+              <NavLink to="/admin/subscriptions" className={linkClass} onClick={onClose}>
+                <CreditCard size={20} />
+                  Billing
               </NavLink>
             </>
           )}

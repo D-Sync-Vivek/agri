@@ -1,6 +1,7 @@
 import { FormEvent, useState, useEffect } from "react";
 import { createDevice, DeviceCreatePayload } from "../api/devices";
-import { adminCreateDevice, adminListUsers, AdminUser } from "../api/admin";
+import { adminCreateDevice, adminListUsers } from "../api/admin";
+import { AdminUser } from "../types";
 import { useAuth } from "../context/AuthContext";
 
 interface Props {

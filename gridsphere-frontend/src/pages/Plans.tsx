@@ -43,7 +43,7 @@ export default function Plans() {
                 {plan.dataRetentionDays ?? "∞"}d retention
               </p>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-extrabold">${plan.priceMonthly ?? "—"}</span>
+                <span className="text-2xl font-extrabold">₹{plan.priceMonthly ?? "—"}</span>
                 <span className="text-ink-dim">/mo</span>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import { Device, User } from "../types";
+import { Device, User, Coupon, AdminUserDetail, AdminUser} from "../types";
 
 // ===== STATS =====
 export interface SystemStats {
@@ -31,8 +31,16 @@ export interface AdminDeviceCreatePayload {
 export interface AdminDeviceUpdatePayload extends Partial<AdminDeviceCreatePayload> {}
 
 export interface AdminDeviceResponse extends Device {
-  users: { id: number; name: string; email: string; role: string; isOwner: boolean }[];
+  users: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    isOwner: boolean;
+    hasActiveSubscription: boolean;
+  }[];
   sensorCount: number;
+  activeSubscriptionCount: number;
 }
 
 export async function adminListDevices(): Promise<AdminDeviceResponse[]> {
@@ -81,17 +89,7 @@ export async function adminUnassignDevice(deviceId: number, userId: number): Pro
 }
 
 // ===== USER MANAGEMENT =====
-export interface AdminUser {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string | null;
-  companyName?: string | null;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  deviceCount: number;
-}
+
 
 export interface AdminUserUpdatePayload {
   name?: string;
@@ -105,7 +103,7 @@ export async function adminListUsers(): Promise<AdminUser[]> {
   return data.data;
 }
 
-export async function adminGetUser(userId: number): Promise<any> {
+export async function adminGetUser(userId: number): Promise<AdminUserDetail> {
   const { data } = await apiClient.get(`/admin/users/${userId}`);
   return data.data;
 }
@@ -144,4 +142,20 @@ export async function checkDeepSeekStatus(): Promise<{ ok: boolean; message: str
 export async function getDeepSeekBalance(): Promise<{ ok: boolean; balance?: number; currency?: string; message?: string }> {
   const { data } = await apiClient.get("/admin/deepseek/balance");
   return data.data;
+}
+
+
+// ====== COUPON ======
+export async function adminCreateCoupon(discountPercent: number, expiryMinutes: number): Promise<Coupon> {
+  const { data } = await apiClient.post("/admin/coupons", { discountPercent, expiryMinutes });
+  return data.data;
+}
+
+export async function adminListCoupons(): Promise<Coupon[]> {
+  const { data } = await apiClient.get("/admin/coupons");
+  return data.data;
+}
+
+export async function adminRevokeCoupon(couponId: number): Promise<void> {
+  await apiClient.delete(`/admin/coupons/${couponId}`);
 }

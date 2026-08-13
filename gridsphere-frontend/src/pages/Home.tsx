@@ -9,6 +9,7 @@ import { WifiOffIcon } from "../components/icons";
 import DeviceVitalsBanner from "../components/DeviceVitalsBanner";
 import SensorCard from "../components/SensorCard";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { getDeviceSubscription } from "../api/subscriptions";
 
 function getReadingStatus(sensorLabel: string, value: number): { label: string; className: string } {
   const label = sensorLabel.toLowerCase();
@@ -30,9 +31,25 @@ export default function Home() {
   const [sensors, setSensors] = useState<DeviceSensor[]>([]);
   const [readings, setReadings] = useState<SensorReading[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
+  // Check subscription – admins have automatic access
   useEffect(() => {
     if (!selectedDevice) return;
+
+    if (isAdmin) {
+      setHasAccess(true);
+      return;
+    }
+
+    getDeviceSubscription(selectedDevice.id)
+      .then((sub) => setHasAccess(!!sub))
+      .catch(() => setHasAccess(false));
+  }, [selectedDevice, isAdmin]);
+
+  // Load sensors and readings (only if access is granted)
+  useEffect(() => {
+    if (!selectedDevice || hasAccess !== true) return;
     setError(null);
     Promise.all([listDeviceSensors(selectedDevice.id), getRecentReadings(selectedDevice.id, 100)])
       .then(([s, r]) => {
@@ -40,7 +57,7 @@ export default function Home() {
         setReadings(r);
       })
       .catch((err) => setError(err?.response?.data?.detail || "Could not load field conditions"));
-  }, [selectedDevice]);
+  }, [selectedDevice, hasAccess]);
 
   // Latest reading per sensor
   const latestBySensor = useMemo(() => {
@@ -104,6 +121,28 @@ export default function Home() {
           ) : (
             <p className="text-ink-dim">No device has been assigned to your account yet. Ask your admin to grant you access to one.</p>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Subscription loading state
+  if (hasAccess === null) {
+    return <div className="text-center text-ink-dim py-12">Verifying access…</div>;
+  }
+
+  // Access denied – no active subscription
+  if (hasAccess === false) {
+    return (
+      <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200 shadow-card">
+          <h3 className="text-lg font-bold mb-2">Subscription required</h3>
+          <p className="text-ink-dim mb-4">
+            You need an active subscription to view data for this device.
+          </p>
+          <Link to="/my-devices" className="inline-block bg-brand-600 text-white font-semibold px-4 py-2 rounded-full hover:brightness-95 transition">
+            Subscribe now
+          </Link>
         </div>
       </div>
     );

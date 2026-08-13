@@ -2,7 +2,12 @@
 import prisma from "../config/prisma";
 import { ApiError } from "../utils/ApiError";
 import { withEffectiveStatus } from "../utils/deviceStatus";
-import { AdminDeviceCreate, AdminDeviceAssign, AdminDeviceUnassign, AdminUserUpdate } from "../schemas/adminSchema";
+import {
+  AdminDeviceCreate,
+  AdminDeviceAssign,
+  AdminDeviceUnassign,
+  AdminUserUpdate,
+} from "../schemas/adminSchema";
 
 export class AdminService {
   // ===== DEVICE MANAGEMENT =====
@@ -12,7 +17,10 @@ export class AdminService {
       where: { deviceUid: data.device_uid },
     });
     if (existing) {
-      throw new ApiError(400, `Device with UID "${data.device_uid}" already exists`);
+      throw new ApiError(
+        400,
+        `Device with UID "${data.device_uid}" already exists`,
+      );
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -33,7 +41,10 @@ export class AdminService {
           where: { id: data.assign_to_user_id },
         });
         if (!user) {
-          throw new ApiError(404, `User with ID ${data.assign_to_user_id} not found`);
+          throw new ApiError(
+            404,
+            `User with ID ${data.assign_to_user_id} not found`,
+          );
         }
 
         await tx.deviceUser.create({
@@ -58,33 +69,35 @@ export class AdminService {
         userAssociations: {
           include: {
             user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+              select: { id: true, name: true, email: true },
             },
           },
         },
         crop: true,
-        sensors: {
-          where: { isActive: true },
-        },
+        sensors: { where: { isActive: true } },
+        subscriptions: true,
       },
       orderBy: { createdAt: "desc" },
     });
 
-    return devices.map((d) => ({
-      ...withEffectiveStatus(d),
-      users: d.userAssociations.map((ua) => ({
-        id: ua.user.id,
-        name: ua.user.name,
-        email: ua.user.email,
-        role: ua.role,
-        isOwner: ua.isOwner,
-      })),
-      sensorCount: d.sensors.length,
-    }));
+    return devices.map((d) => {
+      const activeSubs = d.subscriptions.filter((s) => s.status === "active");
+      return {
+        ...withEffectiveStatus(d),
+        users: d.userAssociations.map((ua) => ({
+          id: ua.user.id,
+          name: ua.user.name,
+          email: ua.user.email,
+          role: ua.role,
+          isOwner: ua.isOwner,
+          hasActiveSubscription: activeSubs.some(
+            (s) => s.userId === ua.user.id,
+          ),
+        })),
+        sensorCount: d.sensors.length,
+        activeSubscriptionCount: activeSubs.length, // NEW
+      };
+    });
   }
 
   async getDeviceDetails(deviceId: number) {
@@ -94,32 +107,21 @@ export class AdminService {
         userAssociations: {
           include: {
             user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-              },
+              select: { id: true, name: true, email: true, phone: true },
             },
           },
         },
         crop: true,
-        sensors: {
-          include: {
-            sensorType: true,
-          },
-        },
-        subscriptions: {
-          include: {
-            plan: true,
-          },
-        },
+        sensors: { include: { sensorType: true } },
+        subscriptions: { include: { plan: true } },
       },
     });
 
-    if (!device) {
-      throw new ApiError(404, "Device not found");
-    }
+    if (!device) throw new ApiError(404, "Device not found");
+
+    const activeSubs = device.subscriptions.filter(
+      (s) => s.status === "active",
+    );
 
     return {
       ...withEffectiveStatus(device),
@@ -130,6 +132,7 @@ export class AdminService {
         phone: ua.user.phone,
         role: ua.role,
         isOwner: ua.isOwner,
+        hasActiveSubscription: activeSubs.some((s) => s.userId === ua.user.id),
       })),
       sensors: device.sensors,
       subscriptions: device.subscriptions,
@@ -211,7 +214,10 @@ export class AdminService {
         where: { deviceUid: data.device_uid },
       });
       if (existing) {
-        throw new ApiError(400, `Device with UID "${data.device_uid}" already exists`);
+        throw new ApiError(
+          400,
+          `Device with UID "${data.device_uid}" already exists`,
+        );
       }
     }
 
@@ -316,8 +322,11 @@ export class AdminService {
           include: {
             device: {
               include: {
-                sensors: {
-                  where: { isActive: true },
+                sensors: { where: { isActive: true } },
+                subscriptions: {
+                  include: {
+                    plan: true,
+                  },
                 },
               },
             },
@@ -337,16 +346,29 @@ export class AdminService {
       role: user.role,
       isActive: user.isActive,
       createdAt: user.createdAt,
-      devices: user.deviceAssociations.map((da) => ({
-        id: da.device.id,
-        deviceUid: da.device.deviceUid,
-        deviceName: da.device.deviceName,
-        status: da.device.status,
-        lastSeenAt: da.device.lastSeenAt,
-        role: da.role,
-        isOwner: da.isOwner,
-        sensorCount: da.device.sensors.length,
-      })),
+      devices: user.deviceAssociations.map((da) => {
+        // Find the active subscription for this user-device pair
+        const activeSub = da.device.subscriptions.find(
+          (s) => s.userId === userId && s.status === "active",
+        );
+        return {
+          id: da.device.id,
+          deviceUid: da.device.deviceUid,
+          deviceName: da.device.deviceName,
+          status: da.device.status,
+          lastSeenAt: da.device.lastSeenAt,
+          role: da.role,
+          isOwner: da.isOwner,
+          sensorCount: da.device.sensors.length,
+          subscription: activeSub
+            ? {
+                planName: activeSub.plan?.planName || null,
+                endDate: activeSub.endDate,
+                status: activeSub.status,
+              }
+            : null,
+        };
+      }),
     };
   }
 
@@ -366,7 +388,10 @@ export class AdminService {
         where: { email: data.email },
       });
       if (existing) {
-        throw new ApiError(400, `User with email "${data.email}" already exists`);
+        throw new ApiError(
+          400,
+          `User with email "${data.email}" already exists`,
+        );
       }
     }
 

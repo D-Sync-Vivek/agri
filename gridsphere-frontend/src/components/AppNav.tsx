@@ -12,6 +12,7 @@ import {
   BarChart3,
   LineChart,
   MessageSquare,
+  CreditCard,
 } from "lucide-react";
 
 export default function AppNav() {
@@ -30,16 +31,18 @@ export default function AppNav() {
       : "text-white/70 hover:text-white hover:bg-white/10"
     }`;
 
-  const navItems = isAdmin
-    ? [
+const navItems = isAdmin
+  ? [
       { to: "/admin", icon: LayoutDashboard, label: "Overview" },
       { to: "/devices", icon: Router, label: "Devices" },
       { to: "/admin/sensors", icon: Microchip, label: "Sensors" },
       { to: "/admin/users", icon: Users, label: "Users" },
       { to: "/admin/compare", icon: BarChart3, label: "Compare" },
+      { to: "/admin/subscriptions", icon: CreditCard, label: "Billing" },
     ]
-    : [
+  : [
       { to: "/", icon: Home, label: "Home" },
+      { to: "/my-devices", icon: CreditCard, label: "My Devices" },
       { to: "/advisory", icon: Brain, label: "Advisory" },
       { to: "/insights", icon: BarChart3, label: "Insights" },
       { to: "/analytics", icon: LineChart, label: "Analytics" },

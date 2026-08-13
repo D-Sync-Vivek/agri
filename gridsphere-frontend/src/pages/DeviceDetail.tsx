@@ -29,8 +29,8 @@ import {
   adminUnassignDevice,
   DeviceAssignment,
   adminListUsers,
-  AdminUser,
 } from "../api/admin";
+import { AdminUser } from "../types";
 
 type Tab = "info" | "history" | "sensors" | "access";
 

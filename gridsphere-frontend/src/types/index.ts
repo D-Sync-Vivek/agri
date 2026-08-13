@@ -168,3 +168,72 @@ export interface RainAnalytics {
   rainDurationHours: number | null;
   cumulativeSeries: { date: string; mm: number }[];
 }
+
+export interface DeviceSubscription {
+  id: number;
+  userId: number;
+  deviceId: number | null;
+  planId: number | null;
+  status: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  billingCycle?: string | null;
+  pricePaid?: number | null;
+  plan?: SubscriptionPlan | null;
+}
+
+export interface DeviceWithSubscription extends Device {
+  subscription: DeviceSubscription | null;
+  hasAccess: boolean;
+}
+
+export interface CheckoutOrder {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  originalPrice?: number;
+  finalPrice?: number;
+  discountApplied?: boolean;
+}
+
+export interface Coupon {
+  id: number;
+  code: string;
+  discountPercent: number;
+  expiresAt: string;
+  createdAt: string;
+  usedByUserId: number | null;
+  usedAt: string | null;
+  usedBy: { id: number; name: string; email: string } | null;
+}
+
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  companyName?: string | null;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  deviceCount: number;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  devices: {
+    id: number;
+    deviceUid: string;
+    deviceName?: string | null;
+    status: string;
+    lastSeenAt?: string | null;
+    role: string | null;
+    isOwner: boolean;
+    sensorCount: number;
+    subscription: {
+      planName: string | null;
+      endDate: string | null;
+      status: string | null;
+    } | null;
+  }[];
+}

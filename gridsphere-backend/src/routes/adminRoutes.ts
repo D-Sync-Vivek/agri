@@ -29,5 +29,6 @@ router.delete("/users/:user_id", asyncHandler(adminController.adminDeleteUser));
 
 // ===== SYSTEM STATS =====
 router.get("/stats", asyncHandler(adminController.adminGetStats));
-
+router.get("/deepseek/status", asyncHandler(adminController.checkDeepSeekStatus));
+router.get("/deepseek/balance", asyncHandler(adminController.getDeepSeekBalanceHandler));
 export default router;

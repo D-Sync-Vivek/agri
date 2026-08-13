@@ -123,7 +123,7 @@ export async function adminListDeviceAssignments(deviceId: number): Promise<Devi
   const device = await adminGetDevice(deviceId);
   if (!device.users || !Array.isArray(device.users)) return [];
   return device.users.map((u: any) => ({
-    id: u.id,               // Using user id as assignment id (no separate assignment id)
+    id: u.id,               
     userId: u.id,
     isOwner: u.isOwner,
     role: u.role,
@@ -134,4 +134,14 @@ export async function adminListDeviceAssignments(deviceId: number): Promise<Devi
       phone: u.phone || null,
     },
   }));
+}
+
+export async function checkDeepSeekStatus(): Promise<{ ok: boolean; message: string; model?: string }> {
+  const { data } = await apiClient.get("/admin/deepseek/status");
+  return data.data;
+}
+
+export async function getDeepSeekBalance(): Promise<{ ok: boolean; balance?: number; currency?: string; message?: string }> {
+  const { data } = await apiClient.get("/admin/deepseek/balance");
+  return data.data;
 }

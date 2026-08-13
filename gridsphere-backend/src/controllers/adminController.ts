@@ -1,4 +1,4 @@
-// src/controllers/adminController.ts
+import { checkDeepSeekHealth, getDeepSeekBalance } from "../services/deepseekService";
 import { Request, Response } from "express";
 import { AdminService } from "../services/adminService";
 import {
@@ -87,4 +87,14 @@ export async function adminDeleteUser(req: Request, res: Response) {
 export async function adminGetStats(req: Request, res: Response) {
   const stats = await adminService.getSystemStats();
   res.status(200).json({ status: "success", data: stats });
+}
+
+export async function checkDeepSeekStatus(req: Request, res: Response) {
+  const result = await checkDeepSeekHealth();
+  res.status(200).json({ status: "success", data: result });
+}
+
+export async function getDeepSeekBalanceHandler(req: Request, res: Response) {
+  const result = await getDeepSeekBalance();
+  res.status(200).json({ status: "success", data: result });
 }

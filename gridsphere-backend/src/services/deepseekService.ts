@@ -3,6 +3,23 @@ import { config } from "../config/env";
 
 const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
 
+interface DeepSeekBalanceResponse {
+  is_available?: boolean;
+  balance_infos?: {
+    currency: string;
+    total_balance: string;
+    granted_balance: string;
+    topped_up_balance: string;
+  }[];
+  balance?: {
+    total: number;
+    currency: string;
+  };
+  total_balance?: number;
+  currency?: string;
+  [key: string]: unknown;
+}
+
 export interface AdvisoryPrompt {
   cropName: string;
   temperatureC: number | null;
@@ -74,13 +91,6 @@ function buildPrompt(input: AdvisoryPrompt): string {
   ].join("\n");
 }
 
-/**
- * Calls the DeepSeek chat completions API (OpenAI-compatible) to generate
- * a crop-specific advisory from real sensor + forecast data.
- *
- * Requires DEEPSEEK_API_KEY to be set (see .env.example). Requires
- * outbound network access to api.deepseek.com at runtime.
- */
 export async function generateAdvisory(input: AdvisoryPrompt): Promise<AdvisoryResult> {
   if (!config.deepseek.apiKey) {
     throw new ApiError(503, "AI advisory is not configured (DEEPSEEK_API_KEY is missing).");
@@ -134,6 +144,9 @@ export async function generateAdvisory(input: AdvisoryPrompt): Promise<AdvisoryR
 
   return parsed;
 }
+
+// ===== CHAT =====
+
 export interface ChatTurn {
   role: "user" | "assistant";
   content: string;
@@ -150,11 +163,11 @@ export interface ChatContext {
   soilMoisturePct: number | null;
   et0MmPerDay: number | null;
   precipitationProbabilityNext12hPct: number | null;
-  historySummary?: string; 
+  historySummary?: string;
 }
 
 function buildChatSystemPrompt(ctx: ChatContext): string {
-  const today = new Date().toISOString().slice(0, 10); // e.g. "2026-07-22"
+  const today = new Date().toISOString().slice(0, 10);
 
   const lines: string[] = [
     "You are an agricultural weather-station assistant embedded in a farmer's app called GridSphere.",
@@ -188,14 +201,6 @@ function buildChatSystemPrompt(ctx: ChatContext): string {
   return lines.join("\n");
 }
 
-
-/**
- * Conversational AI chat assistant (DeepSeek), grounded in the device's
- * real current conditions. Unlike generateAdvisory (single structured
- * JSON call), this is multi-turn - callers pass prior history so the
- * model has conversational context. History is persisted by the caller
- * (see chatController.ts / device_chat_messages table), not here.
- */
 export async function chatWithAssistant(ctx: ChatContext, history: ChatTurn[], message: string): Promise<string> {
   if (!config.deepseek.apiKey) {
     throw new ApiError(503, "AI chat assistant is not configured (DEEPSEEK_API_KEY is missing).");
@@ -229,4 +234,135 @@ export async function chatWithAssistant(ctx: ChatContext, history: ChatTurn[], m
     throw new ApiError(502, "AI chat assistant returned an empty response");
   }
   return reply;
+}
+
+// ===== HEALTH & BALANCE =====
+
+/**
+ * Checks if the DeepSeek API key is valid and the service is reachable.
+ * Uses a minimal 1-token call to avoid cost.
+ */
+export async function checkDeepSeekHealth(): Promise<{
+  ok: boolean;
+  message: string;
+  model?: string;
+}> {
+  if (!config.deepseek.apiKey) {
+    return { ok: false, message: "DeepSeek API key is not configured (DEEPSEEK_API_KEY missing)." };
+  }
+
+  try {
+    const response = await fetch(DEEPSEEK_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.deepseek.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.deepseek.model,
+        messages: [{ role: "user", content: "Hello" }],
+        max_tokens: 1,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      return {
+        ok: false,
+        message: `DeepSeek API returned ${response.status}: ${errorBody.slice(0, 200)}`,
+      };
+    }
+
+    return {
+      ok: true,
+      message: "DeepSeek API is reachable and the key is valid.",
+      model: config.deepseek.model,
+    };
+  } catch (err: any) {
+    return {
+      ok: false,
+      message: `Could not reach DeepSeek API: ${err.message || "network error"}`,
+    };
+  }
+}
+/**
+ * Fetches the current balance (remaining credits) from DeepSeek.
+ * DeepSeek endpoint: https://api.deepseek.com/user/balance
+ * Returns { total: number, currency: string } on success.
+ */
+export async function getDeepSeekBalance(): Promise<{
+  ok: boolean;
+  balance?: number;
+  currency?: string;
+  message?: string;
+}> {
+  if (!config.deepseek.apiKey) {
+    return { ok: false, message: "DeepSeek API key is not configured." };
+  }
+
+  try {
+    // Correct endpoint for balance
+    const response = await fetch("https://api.deepseek.com/user/balance", {
+      headers: {
+        Authorization: `Bearer ${config.deepseek.apiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      // If the endpoint returns 404, the account might not have balance info
+      if (response.status === 404) {
+        return {
+          ok: false,
+          message: "Balance endpoint not available. Your account may not support balance checking.",
+        };
+      }
+      return {
+        ok: false,
+        message: `Balance API returned ${response.status}: ${errorBody.slice(0, 200)}`,
+      };
+    }
+
+    const data = (await response.json()) as DeepSeekBalanceResponse;
+
+    let balance: number | undefined;
+    let currency: string | undefined;
+
+    if (Array.isArray(data.balance_infos) && data.balance_infos.length > 0) {
+      // Actual DeepSeek API shape: { is_available, balance_infos: [{ currency, total_balance, ... }] }
+      const info = data.balance_infos[0];
+      const parsedTotal = parseFloat(info.total_balance);
+      if (!Number.isNaN(parsedTotal)) {
+        balance = parsedTotal;
+        currency = info.currency || "CNY";
+      }
+    } else if (data.balance && typeof data.balance.total === "number") {
+      balance = data.balance.total;
+      currency = data.balance.currency || "CNY";
+    } else if (typeof data.total_balance === "number") {
+      balance = data.total_balance;
+      currency = data.currency || "CNY";
+    } else if (typeof data.balance === "number") {
+      balance = data.balance;
+      currency = data.currency || "CNY";
+    }
+
+    if (balance === undefined) {
+      return {
+        ok: false,
+        message: "Unexpected balance response shape: " + JSON.stringify(data).slice(0, 200),
+      };
+    }
+
+    return {
+      ok: true,
+      balance,
+      currency: currency || "CNY",
+    };
+  } catch (err: any) {
+    return {
+      ok: false,
+      message: `Could not fetch balance: ${err.message || "network error"}`,
+    };
+  }
 }

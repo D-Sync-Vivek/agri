@@ -98,3 +98,4 @@ export async function setDeviceCrop(req: Request, res: Response): Promise<void> 
   const updated = await prisma.device.update({ where: { id: deviceId }, data: { cropId: crop.id } });
   res.status(200).json({ status: "success", data: withEffectiveStatus(updated) });
 }
+

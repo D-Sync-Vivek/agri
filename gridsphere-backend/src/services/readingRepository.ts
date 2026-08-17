@@ -43,3 +43,5 @@ export async function insertBulkReadings(readings: BulkReadingInput[]): Promise<
   const result = await prisma.sensorReading.createMany({ data });
   return result.count;
 }
+
+

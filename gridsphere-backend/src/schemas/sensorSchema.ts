@@ -34,3 +34,5 @@ export const DeviceSensorUpdateSchema = z.object({
 export type DeviceSensorUpdate = z.infer<typeof DeviceSensorUpdateSchema>;
 
 export const SensorTypeUpdateSchema = SensorTypeCreateSchema.partial();
+
+

@@ -13,3 +13,5 @@ export const DeviceCreateSchema = z.object({
 export type DeviceCreate = z.infer<typeof DeviceCreateSchema>;
 
 // Equivalent of app/schemas/device_schema.py -> DeviceResponse (DeviceCreate + id/status/created_at)
+
+

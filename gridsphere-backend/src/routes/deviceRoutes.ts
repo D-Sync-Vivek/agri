@@ -31,3 +31,4 @@ router.get("/:device_id/wind-analytics", requireAuth, requireRole("user", "admin
 router.get("/:device_id/rain-analytics", requireAuth, requireRole("user", "admin"), requireActiveSubscription, asyncHandler(deviceController.getRainAnalyticsHandler));
 
 export default router;
+

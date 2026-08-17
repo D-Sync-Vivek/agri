@@ -40,3 +40,4 @@ export async function getUser(req: Request, res: Response): Promise<void> {
     },
   });
 }
+

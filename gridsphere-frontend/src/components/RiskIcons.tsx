@@ -28,3 +28,4 @@ export function getPrecautionIcon(text: string, size = 18) {
 export function getDiseaseIcon(_name: string, size = 18) {
   return <LeafIcon size={size} />;
 }
+

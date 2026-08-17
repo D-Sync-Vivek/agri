@@ -13,3 +13,5 @@ router.get("/add", asyncHandler(readingController.addReading));
 router.get("/:d_id/history", requireAuth, requireRole("user", "admin"), asyncHandler(readingController.getDeviceHistory));
 
 export default router;
+
+

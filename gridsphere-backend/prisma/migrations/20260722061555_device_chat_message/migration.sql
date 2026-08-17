@@ -18,3 +18,5 @@ ALTER TABLE "device_chat_messages" ADD CONSTRAINT "device_chat_messages_device_i
 
 -- AddForeignKey
 ALTER TABLE "device_chat_messages" ADD CONSTRAINT "device_chat_messages_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+

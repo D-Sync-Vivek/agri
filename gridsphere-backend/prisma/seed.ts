@@ -214,3 +214,4 @@ connectDummyData()
   }
   console.log("Subscription plans seeded.");
 }
+

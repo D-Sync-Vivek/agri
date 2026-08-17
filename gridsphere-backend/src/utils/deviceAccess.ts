@@ -11,3 +11,4 @@ export function deviceOwnershipWhere(req: Request, deviceId: number) {
   }
   return { id: deviceId, userAssociations: { some: { userId: req.currentUser!.id } } };
 }
+

@@ -162,6 +162,15 @@ export default function DeviceDetail() {
         const fromISO = getLocalISOStringWithOffset(customFrom);
         const toISO = getLocalISOStringWithOffset(customTo);
         fetchHistory("custom", fromISO, toISO);
+      } else if (range === "daily") {
+        // "Day" must mean the viewer's local midnight, not the server's -
+        // computing it here (client-side) and sending explicit from/to
+        // avoids that mismatch entirely.
+        const now = new Date();
+        const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const fromISO = getLocalISOStringWithOffset(toDatetimeLocalValue(localMidnight));
+        const toISO = getLocalISOStringWithOffset(toDatetimeLocalValue(now));
+        fetchHistory("custom", fromISO, toISO);
       } else {
         fetchHistory(range);
       }
@@ -257,6 +266,9 @@ export default function DeviceDetail() {
         location_name: editForm.locationName,
         latitude: editForm.latitude,
         longitude: editForm.longitude,
+        sim_number: editForm.simNumber,
+        imei: editForm.imei,
+        installation_date: editForm.installationDate,
       };
       await adminUpdateDevice(id, payload);
       setIsEditing(false);
@@ -321,17 +333,17 @@ export default function DeviceDetail() {
   }, [latestBySensor]);
 
   const chartData = useMemo(() => {
-    const byTime = new Map<string, Record<string, number | string>>();
+    const byTime = new Map<number, Record<string, number | string>>();
     for (const r of historyReadings) {
       const sensor = sensorLabelById.get(r.deviceSensorId);
       const label = sensor?.sensorLabel || `sensor_${r.deviceSensorId}`;
-      const t = new Date(r.recordedAt).toLocaleString();
-      if (!byTime.has(t)) byTime.set(t, { time: t });
-      byTime.get(t)![label] = r.value;
+      const ts = new Date(r.recordedAt).getTime();
+      if (!byTime.has(ts)) byTime.set(ts, { time: new Date(ts).toLocaleString() });
+      byTime.get(ts)![label] = r.value;
     }
-    return Array.from(byTime.values()).sort(
-      (a, b) => new Date(a.time as string).getTime() - new Date(b.time as string).getTime()
-    );
+    return Array.from(byTime.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([, row]) => row);
   }, [historyReadings, sensorLabelById]);
 
   const chartLabels = useMemo(() => {
@@ -557,6 +569,31 @@ export default function DeviceDetail() {
                       className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-dim mb-1.5">SIM card number</label>
+                    <input
+                      value={editForm.simNumber || ""}
+                      onChange={(e) => setEditForm({ ...editForm, simNumber: e.target.value })}
+                      className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-dim mb-1.5">IMEI</label>
+                    <input
+                      value={editForm.imei || ""}
+                      onChange={(e) => setEditForm({ ...editForm, imei: e.target.value })}
+                      className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-dim mb-1.5">Installation date</label>
+                    <input
+                      type="date"
+                      value={editForm.installationDate ? editForm.installationDate.slice(0, 10) : ""}
+                      onChange={(e) => setEditForm({ ...editForm, installationDate: e.target.value })}
+                      className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                    />
+                  </div>
                 </div>
                 <div className="flex items-center justify-end gap-3 mt-6">
                   <button type="button" onClick={() => setIsEditing(false)} className="bg-transparent border border-gray-200 text-ink px-4 py-2 rounded-lg hover:border-brand-600 transition">Cancel</button>
@@ -592,6 +629,20 @@ export default function DeviceDetail() {
                 <div>
                   <div className="text-xs text-ink-dim">Frequency</div>
                   <div className="font-bold">Every {device.frequency} min</div>
+                </div>
+                <div>
+                  <div className="text-xs text-ink-dim">SIM card number</div>
+                  <div className="font-bold">{device.simNumber || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-ink-dim">IMEI</div>
+                  <div className="font-bold">{device.imei || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-ink-dim">Installation Date</div>
+                  <div className="font-bold">
+                    {device.installationDate ? new Date(device.installationDate).toLocaleDateString() : "—"}
+                  </div>
                 </div>
                 <div>
                   <div className="text-xs text-ink-dim">Status</div>
@@ -1163,3 +1214,4 @@ export default function DeviceDetail() {
     </div>
   );
 }
+

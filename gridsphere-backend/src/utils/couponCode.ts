@@ -6,3 +6,4 @@ export function generateCouponCode(length = 8): string {
   }
   return code;
 }
+

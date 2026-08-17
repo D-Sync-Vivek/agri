@@ -129,3 +129,4 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
     </>
   );
 }
+

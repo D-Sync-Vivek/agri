@@ -120,3 +120,4 @@ export const AdminIcon = ({ size = 20 }: IconProps) => (
     <path d="M19 11v6m3-3h-6" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+

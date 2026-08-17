@@ -13,3 +13,5 @@ router.post("/logout", asyncHandler(authController.logout));
 router.get("/checkSession", requireAuth, requireRole("user", "admin"), asyncHandler(authController.checkSession));
 
 export default router;
+
+

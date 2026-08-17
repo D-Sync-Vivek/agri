@@ -189,3 +189,4 @@ export async function getRainAnalytics(deviceId: number): Promise<RainAnalytics>
 
   return { todayMm, weeklyMm, monthlyMm, maxIntensityMmPerHour, rainDurationHours, cumulativeSeries };
 }
+

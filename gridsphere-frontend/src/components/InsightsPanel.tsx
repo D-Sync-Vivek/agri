@@ -87,3 +87,4 @@ export default function InsightsPanel({ deviceId }: { deviceId: number }) {
     </div>
   );
 }
+

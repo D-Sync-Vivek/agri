@@ -8,3 +8,5 @@ const router = Router();
 router.get("/", requireAuth, asyncHandler(planController.getPlan));
 
 export default router;
+
+

@@ -9,6 +9,9 @@ export const AdminDeviceCreateSchema = z.object({
   location_name: z.string().optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
+  sim_number: z.string().optional().nullable(),
+  imei: z.string().optional().nullable(),
+  installation_date: z.string().optional().nullable(),
   // Admin can optionally assign to a user immediately
   assign_to_user_id: z.number().int().optional().nullable(),
 });
@@ -33,3 +36,4 @@ export type AdminDeviceCreate = z.infer<typeof AdminDeviceCreateSchema>;
 export type AdminDeviceAssign = z.infer<typeof AdminDeviceAssignSchema>;
 export type AdminDeviceUnassign = z.infer<typeof AdminDeviceUnassignSchema>;
 export type AdminUserUpdate = z.infer<typeof AdminUserUpdateSchema>;
+

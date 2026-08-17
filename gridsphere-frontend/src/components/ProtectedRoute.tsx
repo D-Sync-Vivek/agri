@@ -22,3 +22,4 @@ export default function ProtectedRoute({ allowedRoles = ["user", "admin"] }: Pro
 
   return <Outlet />;
 }
+

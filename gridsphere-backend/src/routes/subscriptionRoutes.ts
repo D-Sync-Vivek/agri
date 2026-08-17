@@ -14,3 +14,4 @@ router.post("/checkout", requireAuth, requireRole("user", "admin"), asyncHandler
 router.post("/verify", requireAuth, requireRole("user", "admin"), asyncHandler(subscriptionController.verifyPayment));
 
 export default router;
+

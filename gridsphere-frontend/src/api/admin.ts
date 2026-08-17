@@ -25,6 +25,9 @@ export interface AdminDeviceCreatePayload {
   location_name?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  sim_number?: string | null;
+  imei?: string | null;
+  installation_date?: string | null;
   assign_to_user_id?: number | null;
 }
 
@@ -159,3 +162,4 @@ export async function adminListCoupons(): Promise<Coupon[]> {
 export async function adminRevokeCoupon(couponId: number): Promise<void> {
   await apiClient.delete(`/admin/coupons/${couponId}`);
 }
+

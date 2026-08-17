@@ -18,6 +18,9 @@ const emptyForm: AdminDeviceCreatePayload = {
   location_name: "",
   latitude: null,
   longitude: null,
+  sim_number: "",
+  imei: "",
+  installation_date: "",
 };
 
 export default function AdminDevices() {
@@ -205,6 +208,31 @@ export default function AdminDevices() {
                   className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-dim mb-1.5">SIM card number</label>
+                <input
+                  value={form.sim_number || ""}
+                  onChange={(e) => setForm({ ...form, sim_number: e.target.value })}
+                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-dim mb-1.5">IMEI</label>
+                <input
+                  value={form.imei || ""}
+                  onChange={(e) => setForm({ ...form, imei: e.target.value })}
+                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-dim mb-1.5">Installation date</label>
+                <input
+                  type="date"
+                  value={form.installation_date || ""}
+                  onChange={(e) => setForm({ ...form, installation_date: e.target.value })}
+                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-600"
+                />
+              </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
               <button type="button" onClick={() => setShowCreate(false)} className="bg-transparent border border-gray-200 text-ink px-4 py-2 rounded-lg hover:border-brand-600 transition">Cancel</button>
@@ -285,3 +313,4 @@ export default function AdminDevices() {
     </div>
   );
 }
+

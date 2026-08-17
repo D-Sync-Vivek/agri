@@ -19,3 +19,5 @@ router.put("/types/:id", requireAuth, requireRole("admin"), asyncHandler(sensorC
 router.delete("/types/:id", requireAuth, requireRole("admin"), asyncHandler(sensorController.deleteSensorType));
 
 export default router;
+
+

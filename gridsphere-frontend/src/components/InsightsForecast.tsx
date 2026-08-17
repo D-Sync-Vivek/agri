@@ -11,3 +11,5 @@ const InsigthsForecase = () => {
 }
 
 export default InsigthsForecase
+
+

@@ -33,3 +33,4 @@ export async function verifyPayment(payload: {
   const { data } = await apiClient.post("/subscriptions/verify", payload);
   return data.data;
 }
+

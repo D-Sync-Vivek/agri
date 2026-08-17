@@ -12,7 +12,7 @@ import {
 import { getDeviceHistory, HistoryRange, downloadHistoryCsv } from "../api/devices";
 import { listDeviceSensors } from "../api/sensors";
 import { DeviceSensor, SensorReading } from "../types";
-import { getMetricMeta } from "../utils/metrics";
+import { getMetricMeta, getLocalISOStringWithOffset, toDatetimeLocalValue } from "../utils/metrics";
 
 const RANGE_TABS: { key: HistoryRange; label: string }[] = [
   { key: "daily", label: "Day" },
@@ -44,7 +44,19 @@ export default function SensorHistory() {
 
   useEffect(() => {
     setIsLoading(true);
-    getDeviceHistory(dId, range)
+    // "Day" must mean the viewer's local midnight, not the server's -
+    // compute it here and send explicit from/to instead of range=daily.
+    let fetchPromise;
+    if (range === "daily") {
+      const now = new Date();
+      const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const fromISO = getLocalISOStringWithOffset(toDatetimeLocalValue(localMidnight));
+      const toISO = getLocalISOStringWithOffset(toDatetimeLocalValue(now));
+      fetchPromise = getDeviceHistory(dId, "custom", fromISO, toISO);
+    } else {
+      fetchPromise = getDeviceHistory(dId, range);
+    }
+    fetchPromise
       .then((all: SensorReading[]) => {
         setReadings(all.filter((r) => r.deviceSensorId === sId));
       })
@@ -183,3 +195,4 @@ export default function SensorHistory() {
     </div>
   );
 }
+

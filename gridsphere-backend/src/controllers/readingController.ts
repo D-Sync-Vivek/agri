@@ -208,3 +208,4 @@ export async function getDeviceHistory(req: Request, res: Response): Promise<voi
 
   res.status(200).json({ status: true, data: readings });
 }
+

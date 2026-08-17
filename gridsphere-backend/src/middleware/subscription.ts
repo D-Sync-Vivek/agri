@@ -21,3 +21,4 @@ export async function requireActiveSubscription(req: Request, res: Response, nex
 
   next();
 }
+

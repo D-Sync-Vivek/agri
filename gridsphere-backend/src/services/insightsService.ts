@@ -71,3 +71,5 @@ export function generateAdvisories(inputs: InsightInputs): Advisory[] {
 
   return advisories;
 }
+
+

@@ -36,6 +36,9 @@ export interface Device {
   isSolarCharging?: boolean | null;
   signalStrengthDbm?: number | null;
   firmwareVersion?: string | null;
+  simNumber?: string | null;
+  imei?: string | null;
+  installationDate?: string | null;
   cropId?: number | null;
   createdAt: string;
 }
@@ -237,3 +240,4 @@ export interface AdminUserDetail extends AdminUser {
     } | null;
   }[];
 }
+

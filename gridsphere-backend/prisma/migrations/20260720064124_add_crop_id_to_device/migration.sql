@@ -39,3 +39,5 @@ ALTER TABLE "device_advisories" ADD CONSTRAINT "device_advisories_device_id_fkey
 
 -- AddForeignKey
 ALTER TABLE "device_advisories" ADD CONSTRAINT "device_advisories_crop_id_fkey" FOREIGN KEY ("crop_id") REFERENCES "crops"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+

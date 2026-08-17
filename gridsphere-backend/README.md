@@ -362,3 +362,5 @@ curl "http://localhost:8000/readings/add?d_id=1&temp=23.5&humidity=60"
 You can also import the routes above into Postman/Insomnia; the JSON
 request/response shapes are byte-for-byte the same as the FastAPI version,
 so any existing frontend or API test suite continues to work unmodified.
+
+

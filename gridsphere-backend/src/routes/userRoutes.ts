@@ -10,3 +10,5 @@ const router = Router();
 router.get("/", requireAuth, requireRole("user", "admin"), asyncHandler(userController.getUser));
 
 export default router;
+
+

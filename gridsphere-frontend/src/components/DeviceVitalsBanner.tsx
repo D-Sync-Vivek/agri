@@ -70,3 +70,4 @@ export default function DeviceVitalsBanner({ device }: Props) {
     </section>
   );
 }
+

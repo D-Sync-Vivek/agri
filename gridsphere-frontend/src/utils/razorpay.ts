@@ -39,3 +39,4 @@ export function openRazorpayCheckout(params: OpenCheckoutParams) {
 
   rzp.open();
 }
+

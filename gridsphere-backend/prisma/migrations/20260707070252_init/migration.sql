@@ -220,3 +220,5 @@ ALTER TABLE "device_subscriptions" ADD CONSTRAINT "device_subscriptions_device_i
 
 -- AddForeignKey
 ALTER TABLE "device_subscriptions" ADD CONSTRAINT "device_subscriptions_plan_id_fkey" FOREIGN KEY ("plan_id") REFERENCES "subscription_plans"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+

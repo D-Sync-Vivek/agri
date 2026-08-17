@@ -37,3 +37,4 @@ router.post("/coupons", asyncHandler(adminController.createCoupon));
 router.get("/coupons", asyncHandler(adminController.listCoupons));
 router.delete("/coupons/:coupon_id", asyncHandler(adminController.revokeCoupon));
 export default router;
+

@@ -289,3 +289,4 @@ function MetricRow({ label, subtitle, value, highlight = false }: { label: strin
     </div>
   );
 }
+

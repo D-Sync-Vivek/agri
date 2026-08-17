@@ -109,3 +109,4 @@ export default function RainAnalyticsPanel({ deviceId }: { deviceId: number }) {
     </div>
   );
 }
+

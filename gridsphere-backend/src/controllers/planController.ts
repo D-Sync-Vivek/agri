@@ -9,3 +9,5 @@ import { Request, Response } from "express";
 export async function getPlan(_req: Request, res: Response): Promise<void> {
   res.status(200).json({ status: "success", data: { plan_type: "premium" } });
 }
+
+

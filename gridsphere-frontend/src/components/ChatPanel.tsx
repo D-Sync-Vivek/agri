@@ -146,3 +146,4 @@ export default function ChatPanel({ deviceId }: { deviceId: number }) {
     </div>
   );
 }
+

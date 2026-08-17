@@ -73,3 +73,4 @@ export async function updateSensorType(
 export async function deleteSensorType(id: number): Promise<void> {
   await apiClient.delete(`/sensors/types/${id}`);
 }
+

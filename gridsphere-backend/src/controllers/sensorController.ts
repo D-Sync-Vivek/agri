@@ -173,3 +173,4 @@ export async function deleteSensorType(req: Request, res: Response): Promise<voi
   await prisma.sensorType.delete({ where: { id } });
   res.status(200).json({ status: "success", message: "Sensor type deleted" });
 }
+

@@ -13,3 +13,4 @@ export async function sendChatMessage(deviceId: number, message: string): Promis
   const { data } = await apiClient.post(`/devices/${deviceId}/chat`, { message });
   return data.data.reply;
 }
+

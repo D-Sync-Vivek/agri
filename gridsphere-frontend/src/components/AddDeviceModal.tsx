@@ -125,3 +125,4 @@ export default function AddDeviceModal({ onClose, onCreated, isAdmin = false }: 
     </div>
   );
 }
+

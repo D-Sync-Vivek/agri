@@ -30,3 +30,5 @@ export async function fetchCurrentUser(): Promise<User> {
   const { data } = await apiClient.get("/users/");
   return data.data;
 }
+
+

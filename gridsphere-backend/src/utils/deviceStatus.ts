@@ -46,3 +46,5 @@ export function withEffectiveStatus<T extends { lastSeenAt: Date | null; frequen
 ): T {
   return { ...device, status: computeEffectiveDeviceStatus(device) };
 }
+
+

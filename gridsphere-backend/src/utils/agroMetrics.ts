@@ -126,3 +126,5 @@ export function calculateDerivedMetrics(tempC: number | null, humidityPct: numbe
     et0Source: null, // populated by the caller alongside et0MmPerDay
   };
 }
+
+

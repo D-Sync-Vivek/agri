@@ -68,6 +68,8 @@ model Device {
   isSolarCharging   Boolean?  @map("is_solar_charging")
   signalStrengthDbm Int?      @map("signal_strength_dbm")
   firmwareVersion   String?   @map("firmware_version")
+  simNumber         String?   @map("sim_number")
+  imei              String?   @map("imei")
   // The crop currently planted at this device's location, if the user has
   // set one (see POST /devices/:id/crop). Drives crop-specific dashboard
   // data and AI advisories. Nullable - a device with no crop set just
@@ -335,3 +337,4 @@ model Coupon {
 
   @@map("coupons")
 }
+

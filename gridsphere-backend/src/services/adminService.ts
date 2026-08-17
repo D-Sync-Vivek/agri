@@ -33,6 +33,9 @@ export class AdminService {
           locationName: data.location_name ?? undefined,
           latitude: data.latitude ?? undefined,
           longitude: data.longitude ?? undefined,
+          simNumber: data.sim_number ?? undefined,
+          imei: data.imei ?? undefined,
+          installationDate: data.installation_date ? new Date(data.installation_date) : undefined,
         },
       });
 
@@ -231,6 +234,9 @@ export class AdminService {
         locationName: data.location_name ?? undefined,
         latitude: data.latitude ?? undefined,
         longitude: data.longitude ?? undefined,
+        simNumber: data.sim_number ?? undefined,
+        imei: data.imei ?? undefined,
+        installationDate: data.installation_date ? new Date(data.installation_date) : undefined,
       },
     });
 
@@ -489,3 +495,5 @@ export class AdminService {
     };
   }
 }
+
+

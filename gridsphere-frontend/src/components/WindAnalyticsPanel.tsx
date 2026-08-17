@@ -97,3 +97,4 @@ export default function WindAnalyticsPanel({ deviceId }: { deviceId: number }) {
     </div>
   );
 }
+

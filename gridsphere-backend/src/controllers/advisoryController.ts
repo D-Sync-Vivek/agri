@@ -161,3 +161,4 @@ export async function getAdvisory(req: Request, res: Response): Promise<void> {
     },
   });
 }
+

@@ -54,3 +54,5 @@ export async function logout(_req: Request, res: Response): Promise<void> {
 export async function checkSession(req: Request, res: Response): Promise<void> {
   res.status(200).json({ status: true, message: "Session active", user_id: req.currentUser!.id });
 }
+
+

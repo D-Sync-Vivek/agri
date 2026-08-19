@@ -161,3 +161,4 @@ export async function revokeCoupon(req: Request, res: Response): Promise<void> {
   await prisma.coupon.delete({ where: { id: couponId } });
   res.status(200).json({ status: "success", message: "Coupon revoked" });
 }
+

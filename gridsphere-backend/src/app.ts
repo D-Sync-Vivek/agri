@@ -11,6 +11,7 @@ import readingRoutes from "./routes/readingRoutes";
 import sensorRoutes from "./routes/sensorRoutes";
 import subscriptionRoutes from "./routes/subscriptionRoutes";
 import cropRoutes from "./routes/cropRoutes";
+import firmwareRoutes from "./routes/firmwareRoutes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import adminRoutes from "./routes/adminRoutes";
 
@@ -86,6 +87,7 @@ export async function createApp(): Promise<Application> {
   app.use("/sensors", sensorRoutes);
   app.use("/subscriptions", subscriptionRoutes);
   app.use("/crops", cropRoutes);
+  app.use("/firmware", firmwareRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

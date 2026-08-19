@@ -68,6 +68,8 @@ model Device {
   isSolarCharging   Boolean?  @map("is_solar_charging")
   signalStrengthDbm Int?      @map("signal_strength_dbm")
   firmwareVersion   String?   @map("firmware_version")
+  targetFirmwareId  Int?      @map("target_firmware_id")
+  targetFirmware    Firmware? @relation(fields: [targetFirmwareId], references: [id])
   simNumber         String?   @map("sim_number")
   imei              String?   @map("imei")
   // The crop currently planted at this device's location, if the user has
@@ -336,5 +338,19 @@ model Coupon {
   usedBy    User? @relation("CouponUsedBy", fields: [usedByUserId], references: [id])
 
   @@map("coupons")
+}
+
+// Uploaded firmware images available to assign to devices (OTA updates).
+model Firmware {
+  id          Int      @id @default(autoincrement())
+  version     String
+  filename    String
+  sha256      String
+  size        Int
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  devices Device[]
+
+  @@map("firmware")
 }
 

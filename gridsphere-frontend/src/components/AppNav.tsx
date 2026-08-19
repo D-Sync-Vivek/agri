@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Router,
   Microchip,
+  UploadCloud,
   Users,
   UserCircle,
   LogOut,
@@ -36,6 +37,7 @@ const navItems = isAdmin
       { to: "/admin", icon: LayoutDashboard, label: "Overview" },
       { to: "/devices", icon: Router, label: "Devices" },
       { to: "/admin/sensors", icon: Microchip, label: "Sensors" },
+      { to: "/admin/firmware", icon: UploadCloud, label: "Firmware" },
       { to: "/admin/users", icon: Users, label: "Users" },
       { to: "/admin/compare", icon: BarChart3, label: "Compare" },
       { to: "/admin/subscriptions", icon: CreditCard, label: "Billing" },
@@ -77,17 +79,6 @@ const navItems = isAdmin
           <span>Profile</span>
         </NavLink>
       </nav>
-
-      {/* Logout - at bottom */}
-      <div className="px-2 pb-4 border-t border-white/10 pt-4">
-        <button
-          onClick={handleLogout}
-          className="flex flex-col items-center w-full py-3 px-2 rounded-lg text-xs font-medium text-white/80 hover:bg-[#2E8B57] hover:text-white transition-colors"
-        >
-          <LogOut size={20} />
-          <span>Logout</span>
-        </button>
-      </div>
     </nav>
   );
 }

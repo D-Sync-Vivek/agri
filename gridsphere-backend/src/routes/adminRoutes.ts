@@ -1,9 +1,12 @@
-// src/routes/adminRoutes.ts
 import { Router } from "express";
+import multer from "multer";
 import * as adminController from "../controllers/adminController";
+import * as adminFirmwareController from "../controllers/adminFirmwareController";
 import { requireAuth } from "../middleware/auth";
 import { requireRole } from "../middleware/rbac";
 import { asyncHandler } from "../middleware/errorHandler";
+
+const firmwareUpload = multer({ dest: "/tmp/firmware-uploads" });
 
 const router = Router();
 
@@ -36,5 +39,13 @@ router.get("/deepseek/balance", asyncHandler(adminController.getDeepSeekBalanceH
 router.post("/coupons", asyncHandler(adminController.createCoupon));
 router.get("/coupons", asyncHandler(adminController.listCoupons));
 router.delete("/coupons/:coupon_id", asyncHandler(adminController.revokeCoupon));
+
+// ==== FIRMWARE (OTA) =======
+router.post("/firmware", firmwareUpload.single("file"), asyncHandler(adminFirmwareController.uploadFirmware));
+router.get("/firmware", asyncHandler(adminFirmwareController.listFirmware));
+router.delete("/firmware/:id", asyncHandler(adminFirmwareController.deleteFirmware));
+router.post("/firmware/:id/assign", asyncHandler(adminFirmwareController.assignFirmware));
+router.post("/firmware/unassign", asyncHandler(adminFirmwareController.unassignFirmware));
+
 export default router;
 

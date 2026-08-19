@@ -17,6 +17,7 @@ import AdminDevices from "./pages/AdminDevices";
 import AdminOverview from "./pages/AdminOverview";
 import HomeOrRedirect from "./components/HomeOrRedirect";
 import AdminSensors from "./pages/AdminSensors";
+import AdminFirmware from "./pages/AdminFirmware";
 import AdvisoryPage from "./pages/AdvisoryPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import ChatPage from "./pages/ChatPage";
@@ -75,6 +76,7 @@ function AppContent() {
               <Route path="/admin/devices" element={<AdminDevices />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/sensors" element={<AdminSensors />} />
+              <Route path="/admin/firmware" element={<AdminFirmware />} />
               <Route path="/admin/compare" element={<AdminCompare />} />
               <Route path="/admin/compare/sensor/:sensorId" element={<CompareDetail />} />
               <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />

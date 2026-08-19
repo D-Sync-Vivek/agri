@@ -66,3 +66,5 @@ npm run preview   # serve the production build locally
   ingestion itself is fully dynamic on the backend
 - `src/index.css` — all design tokens (colors, radius, shadows, chat
   bubble styles) as CSS variables at the top
+
+
